@@ -1,0 +1,1480 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Gym {
+  id                     String                 @id @default(cuid())
+  name                   String
+  slug                   String                 @unique
+  email                  String
+  phone                  String?
+  logoUrl                String?
+  coverUrl               String?
+  primaryColor           String?                @default("#6366f1")
+  website                String?
+  address                String?
+  city                   String?
+  country                String?
+  timezone               String                 @default("UTC")
+  currency               String                 @default("EUR")
+  status                 GymStatus              @default(TRIAL)
+  planTier               GymPlanTier            @default(STARTER)
+  trialEndsAt            DateTime?
+  stripeCustomerId       String?
+  stripeSubId            String?
+  maxMembers             Int                    @default(100)
+  maxBranches            Int                    @default(1)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  stripeconnectaccountid String?
+  stripeplantier         String?
+  description            String?
+  latitude               Float?
+  longitude              Float?
+  rating                 Float                  @default(0)
+  reviewCount            Int                    @default(0)
+  platformCommissionRate Float                  @default(20)
+  reviewcount            Int                    @default(0)
+  platformcommissionrate Float                  @default(20)
+  access_logs            access_logs[]
+  activities             activities[]
+  ai_insights            ai_insights[]
+  auditLogs              AuditLog[]
+  branches               Branch[]
+  community_groups       community_groups[]
+  equipments             equipments[]
+  gift_cards             gift_cards[]
+  classes                GymClass[]
+  gym_events             gym_events[]
+  live_classes           live_classes[]
+  lockers                lockers[]
+  loyalty_rewards        loyalty_rewards[]
+  loyalty_tiers          loyalty_tiers[]
+  marketing_campaigns    marketing_campaigns[]
+  meal_plans             meal_plans[]
+  membershipPlans        MembershipPlan[]
+  notifications          NotificationTemplate[]
+  products               Product[]
+  programs               programs[]
+  saasInvoices           SaasInvoice[]
+  suppliers              suppliers[]
+  supportTickets         SupportTicket[]
+  system_events          system_events[]
+  users                  User[]
+
+  @@map("gyms")
+}
+
+model SaasInvoice {
+  id          String        @id @default(cuid())
+  gymId       String
+  amount      Float
+  currency    String        @default("EUR")
+  status      PaymentStatus @default(PENDING)
+  dueDate     DateTime
+  paidAt      DateTime?
+  stripeInvId String?
+  createdAt   DateTime      @default(now())
+  gym         Gym           @relation(fields: [gymId], references: [id])
+
+  @@map("saas_invoices")
+}
+
+model SupportTicket {
+  id          String       @id @default(cuid())
+  gymId       String
+  subject     String
+  description String
+  status      TicketStatus @default(OPEN)
+  priority    String       @default("MEDIUM")
+  assignedTo  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  gym         Gym          @relation(fields: [gymId], references: [id])
+
+  @@map("support_tickets")
+}
+
+model Branch {
+  id          String          @id @default(cuid())
+  gymId       String
+  name        String
+  address     String?
+  city        String?
+  phone       String?
+  email       String?
+  capacity    Int             @default(100)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  access_logs access_logs[]
+  attendances Attendance[]
+  gym         Gym             @relation(fields: [gymId], references: [id])
+  schedules   ClassSchedule[]
+  equipments  equipments[]
+  lockers     lockers[]
+  users       User[]
+
+  @@map("branches")
+}
+
+model User {
+  id                                       String                    @id @default(cuid())
+  gymId                                    String?
+  branchId                                 String?
+  role                                     UserRole
+  email                                    String                    @unique
+  phone                                    String?
+  passwordHash                             String
+  firstName                                String
+  lastName                                 String
+  gender                                   Gender?
+  dateOfBirth                              DateTime?
+  avatarUrl                                String?
+  address                                  String?
+  city                                     String?
+  country                                  String?
+  emergencyName                            String?
+  emergencyPhone                           String?
+  isActive                                 Boolean                   @default(true)
+  isEmailVerified                          Boolean                   @default(false)
+  emailVerifyToken                         String?
+  resetToken                               String?
+  resetTokenExp                            DateTime?
+  refreshToken                             String?
+  lastLoginAt                              DateTime?
+  createdAt                                DateTime                  @default(now())
+  updatedAt                                DateTime                  @updatedAt
+  access_logs                              access_logs[]
+  activity_participants                    activity_participants[]
+  ai_diet_plans                            ai_diet_plans[]
+  ai_insights                              ai_insights[]
+  attendances                              Attendance[]
+  auditLogs                                AuditLog[]
+  bookings                                 Booking[]
+  campaign_sends                           campaign_sends[]
+  classesLed                               ClassSchedule[]           @relation("TrainerSchedules")
+  equipment_bookings                       equipment_bookings[]
+  event_registrations                      event_registrations[]
+  gift_card_transactions                   gift_card_transactions[]
+  gift_cards_gift_cards_purchaserIdTousers gift_cards[]              @relation("gift_cards_purchaserIdTousers")
+  gift_cards_gift_cards_recipientIdTousers gift_cards[]              @relation("gift_cards_recipientIdTousers")
+  group_comments                           group_comments[]
+  group_members                            group_members[]
+  group_posts                              group_posts[]
+  live_class_messages                      live_class_messages[]
+  live_class_participants                  live_class_participants[]
+  live_classes                             live_classes[]
+  locker_bookings                          locker_bookings[]
+  loyalty_accounts                         loyalty_accounts?
+  loyalty_transactions                     loyalty_transactions[]
+  meal_plans_meal_plans_authorIdTousers    meal_plans[]              @relation("meal_plans_authorIdTousers")
+  meal_plans_meal_plans_memberIdTousers    meal_plans[]              @relation("meal_plans_memberIdTousers")
+  memberProfile                            MemberProfile?
+  createdMembers                           Membership[]              @relation("CreatedByStaff")
+  memberships                              Membership[]              @relation("MemberMemberships")
+  notifications                            Notification[]
+  payments                                 Payment[]
+  program_enrollments                      program_enrollments[]
+  programs                                 programs[]
+  staffShifts                              StaffShift[]
+  system_events                            system_events[]
+  trainerProfile                           TrainerProfile?
+  branch                                   Branch?                   @relation(fields: [branchId], references: [id])
+  gym                                      Gym?                      @relation(fields: [gymId], references: [id])
+
+  @@map("users")
+}
+
+model TrainerProfile {
+  id                String      @id @default(cuid())
+  userId            String      @unique
+  specialties       String[]
+  certifications    String[]
+  bio               String?
+  experience        Int?
+  rating            Float?      @default(0)
+  commissionPercent Float       @default(0)
+  sessionRate       Float?
+  isAvailable       Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  ptSessions        PtSession[]
+  user              User        @relation(fields: [userId], references: [id])
+
+  @@map("trainer_profiles")
+}
+
+model MemberProfile {
+  id               String            @id @default(cuid())
+  userId           String            @unique
+  memberNumber     String            @unique
+  qrCode           String            @unique
+  rfidTag          String?           @unique
+  joinedAt         DateTime          @default(now())
+  notes            String?
+  medicalNotes     String?
+  fitnessGoals     String[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  bodyMeasurements BodyMeasurement[]
+  goals            FitnessGoal[]
+  user             User              @relation(fields: [userId], references: [id])
+  nutritionLogs    NutritionLog[]
+  ptSessions       PtSession[]
+  workoutPlans     WorkoutPlan[]
+
+  @@map("member_profiles")
+}
+
+model MembershipPlan {
+  id              String         @id @default(cuid())
+  gymId           String
+  name            String
+  description     String?
+  type            MembershipType
+  price           Float
+  currency        String         @default("EUR")
+  durationDays    Int
+  maxFreeze       Int            @default(30)
+  maxVisitsPerDay Int            @default(1)
+  classesIncluded Boolean        @default(true)
+  guestPasses     Int            @default(0)
+  isActive        Boolean        @default(true)
+  isPublic        Boolean        @default(true)
+  stripePriceId   String?
+  features        String[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  gym             Gym            @relation(fields: [gymId], references: [id])
+  memberships     Membership[]
+
+  @@map("membership_plans")
+}
+
+model Membership {
+  id           String           @id @default(cuid())
+  memberId     String
+  planId       String
+  createdById  String?
+  status       MembershipStatus @default(PENDING)
+  startDate    DateTime
+  endDate      DateTime
+  autoRenew    Boolean          @default(true)
+  frozenAt     DateTime?
+  frozenUntil  DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?
+  discount     Float            @default(0)
+  finalPrice   Float
+  stripeSubId  String?
+  contractUrl  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  invoices     Invoice[]
+  createdBy    User?            @relation("CreatedByStaff", fields: [createdById], references: [id])
+  member       User             @relation("MemberMemberships", fields: [memberId], references: [id])
+  plan         MembershipPlan   @relation(fields: [planId], references: [id])
+  payments     Payment[]
+
+  @@map("memberships")
+}
+
+model Payment {
+  id              String          @id @default(cuid())
+  userId          String
+  membershipId    String?
+  amount          Float
+  currency        String          @default("EUR")
+  status          PaymentStatus   @default(PENDING)
+  method          PaymentMethod   @default(STRIPE)
+  type            TransactionType
+  stripePaymentId String?
+  stripeInvId     String?
+  refundedAmount  Float?
+  refundedAt      DateTime?
+  notes           String?
+  receiptUrl      String?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  invoice         Invoice?
+  membership      Membership?     @relation(fields: [membershipId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+model Invoice {
+  id            String      @id @default(cuid())
+  membershipId  String?
+  paymentId     String      @unique
+  invoiceNumber String      @unique
+  amount        Float
+  tax           Float       @default(0)
+  total         Float
+  dueDate       DateTime
+  paidAt        DateTime?
+  pdfUrl        String?
+  createdAt     DateTime    @default(now())
+  membership    Membership? @relation(fields: [membershipId], references: [id])
+  payment       Payment     @relation(fields: [paymentId], references: [id])
+
+  @@map("invoices")
+}
+
+model Attendance {
+  id           String           @id @default(cuid())
+  userId       String
+  branchId     String
+  method       AttendanceMethod @default(QR_CODE)
+  checkedInAt  DateTime         @default(now())
+  checkedOutAt DateTime?
+  durationMin  Int?
+  notes        String?
+  branch       Branch           @relation(fields: [branchId], references: [id])
+  user         User             @relation(fields: [userId], references: [id])
+
+  @@index([userId, checkedInAt])
+  @@index([branchId, checkedInAt])
+  @@map("attendances")
+}
+
+model GymClass {
+  id          String          @id @default(cuid())
+  gymId       String
+  name        String
+  description String?
+  category    String
+  duration    Int
+  difficulty  String?
+  imageUrl    String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  schedules   ClassSchedule[]
+  gym         Gym             @relation(fields: [gymId], references: [id])
+
+  @@map("gym_classes")
+}
+
+model ClassSchedule {
+  id              String      @id @default(cuid())
+  classId         String
+  branchId        String
+  trainerId       String?
+  startTime       DateTime
+  endTime         DateTime
+  maxCapacity     Int         @default(20)
+  status          ClassStatus @default(SCHEDULED)
+  location        String?
+  isRecurring     Boolean     @default(false)
+  recurrenceRule  String?
+  cancelledReason String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  bookings        Booking[]
+  branch          Branch      @relation(fields: [branchId], references: [id])
+  gymClass        GymClass    @relation(fields: [classId], references: [id])
+  trainer         User?       @relation("TrainerSchedules", fields: [trainerId], references: [id])
+
+  @@index([startTime])
+  @@map("class_schedules")
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  memberId     String
+  scheduleId   String
+  status       BookingStatus @default(CONFIRMED)
+  waitlistPos  Int?
+  bookedAt     DateTime      @default(now())
+  cancelledAt  DateTime?
+  cancelReason String?
+  attended     Boolean       @default(false)
+  member       User          @relation(fields: [memberId], references: [id])
+  schedule     ClassSchedule @relation(fields: [scheduleId], references: [id])
+
+  @@unique([memberId, scheduleId])
+  @@map("bookings")
+}
+
+model PtSession {
+  id              String         @id @default(cuid())
+  trainerId       String
+  memberId        String
+  startTime       DateTime
+  endTime         DateTime
+  status          ClassStatus    @default(SCHEDULED)
+  notes           String?
+  trainerNotes    String?
+  sessionNumber   Int
+  totalSessions   Int
+  pricePerSession Float
+  createdAt       DateTime       @default(now())
+  member          MemberProfile  @relation(fields: [memberId], references: [id])
+  trainer         TrainerProfile @relation(fields: [trainerId], references: [id])
+
+  @@map("pt_sessions")
+}
+
+model StaffShift {
+  id           String           @id @default(cuid())
+  userId       String
+  startTime    DateTime
+  endTime      DateTime
+  status       StaffShiftStatus @default(SCHEDULED)
+  checkedInAt  DateTime?
+  checkedOutAt DateTime?
+  notes        String?
+  createdAt    DateTime         @default(now())
+  user         User             @relation(fields: [userId], references: [id])
+
+  @@map("staff_shifts")
+}
+
+model WorkoutPlan {
+  id          String        @id @default(cuid())
+  memberId    String
+  title       String
+  description String?
+  goals       String[]
+  weeks       Int           @default(4)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  days        WorkoutDay[]
+  member      MemberProfile @relation(fields: [memberId], references: [id])
+
+  @@map("workout_plans")
+}
+
+model WorkoutDay {
+  id        String            @id @default(cuid())
+  planId    String
+  dayOfWeek Int
+  name      String?
+  plan      WorkoutPlan       @relation(fields: [planId], references: [id])
+  exercises WorkoutExercise[]
+
+  @@map("workout_days")
+}
+
+model Exercise {
+  id               String            @id @default(cuid())
+  name             String
+  category         String
+  muscleGroup      String[]
+  equipment        String?
+  description      String?
+  videoUrl         String?
+  imageUrl         String?
+  isPublic         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  workoutExercises WorkoutExercise[]
+
+  @@map("exercises")
+}
+
+model WorkoutExercise {
+  id         String     @id @default(cuid())
+  dayId      String
+  exerciseId String
+  sets       Int?
+  reps       String?
+  weight     String?
+  duration   Int?
+  restTime   Int?
+  notes      String?
+  order      Int        @default(0)
+  day        WorkoutDay @relation(fields: [dayId], references: [id])
+  exercise   Exercise   @relation(fields: [exerciseId], references: [id])
+
+  @@map("workout_exercises")
+}
+
+model BodyMeasurement {
+  id         String        @id @default(cuid())
+  memberId   String
+  date       DateTime      @default(now())
+  weightKg   Float?
+  heightCm   Float?
+  bmi        Float?
+  bodyFatPct Float?
+  chestCm    Float?
+  waistCm    Float?
+  hipsCm     Float?
+  armCm      Float?
+  thighCm    Float?
+  notes      String?
+  member     MemberProfile @relation(fields: [memberId], references: [id])
+
+  @@map("body_measurements")
+}
+
+model FitnessGoal {
+  id          String        @id @default(cuid())
+  memberId    String
+  title       String
+  description String?
+  targetDate  DateTime?
+  isAchieved  Boolean       @default(false)
+  achievedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  member      MemberProfile @relation(fields: [memberId], references: [id])
+
+  @@map("fitness_goals")
+}
+
+model NutritionLog {
+  id       String        @id @default(cuid())
+  memberId String
+  date     DateTime      @default(now())
+  calories Float?
+  proteinG Float?
+  carbsG   Float?
+  fatG     Float?
+  waterMl  Float?
+  notes    String?
+  meals    MealEntry[]
+  member   MemberProfile @relation(fields: [memberId], references: [id])
+
+  @@map("nutrition_logs")
+}
+
+model MealEntry {
+  id       String       @id @default(cuid())
+  logId    String
+  name     String
+  type     String
+  calories Float?
+  protein  Float?
+  carbs    Float?
+  fat      Float?
+  log      NutritionLog @relation(fields: [logId], references: [id])
+
+  @@map("meal_entries")
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  gymId       String
+  name        String
+  category    String
+  description String?
+  price       Float
+  currency    String      @default("EUR")
+  stock       Int         @default(0)
+  imageUrl    String?
+  sku         String?     @unique
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+  gym         Gym         @relation(fields: [gymId], references: [id])
+
+  @@map("products")
+}
+
+model Order {
+  id          String        @id @default(cuid())
+  customerId  String
+  totalAmount Float
+  currency    String        @default("EUR")
+  status      PaymentStatus @default(PENDING)
+  method      PaymentMethod
+  createdAt   DateTime      @default(now())
+  items       OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Float
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model NotificationTemplate {
+  id       String              @id @default(cuid())
+  gymId    String
+  key      String
+  channel  NotificationChannel
+  subject  String?
+  body     String
+  isActive Boolean             @default(true)
+  gym      Gym                 @relation(fields: [gymId], references: [id])
+
+  @@unique([gymId, key, channel])
+  @@map("notification_templates")
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  channel   NotificationChannel
+  status    NotificationStatus  @default(PENDING)
+  subject   String?
+  body      String
+  sentAt    DateTime?
+  readAt    DateTime?
+  metadata  Json?
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  gymId         String
+  code          String
+  discountType  String
+  discountValue Float
+  maxUses       Int?
+  currentUses   Int       @default(0)
+  validFrom     DateTime  @default(now())
+  validUntil    DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@unique([gymId, code])
+  @@map("coupons")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  gymId     String?
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  gym       Gym?     @relation(fields: [gymId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([gymId, createdAt])
+  @@map("audit_logs")
+}
+
+model access_logs {
+  id         String       @id
+  userId     String?
+  branchId   String?
+  gymId      String?
+  qrCode     String?
+  result     AccessResult
+  reason     String?
+  direction  String       @default("IN")
+  overrideBy String?
+  ipAddress  String?
+  device     String?
+  createdAt  DateTime     @default(now())
+  branches   Branch?      @relation(fields: [branchId], references: [id])
+  gyms       Gym?         @relation(fields: [gymId], references: [id])
+  users      User?        @relation(fields: [userId], references: [id])
+
+  @@index([gymId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model activities {
+  id                    String                  @id
+  gymId                 String
+  title                 String
+  description           String?
+  type                  String
+  rules                 Json?
+  rewardPoints          Int                     @default(0)
+  badgeName             String?
+  startDate             DateTime
+  endDate               DateTime
+  status                ActivityStatus          @default(DRAFT)
+  imageUrl              String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  gyms                  Gym                     @relation(fields: [gymId], references: [id])
+  activity_participants activity_participants[]
+}
+
+model activity_participants {
+  id          String     @id
+  activityId  String
+  userId      String
+  joinedAt    DateTime   @default(now())
+  progress    Float      @default(0)
+  completed   Boolean    @default(false)
+  completedAt DateTime?
+  submission  Json?
+  activities  activities @relation(fields: [activityId], references: [id])
+  users       User       @relation(fields: [userId], references: [id])
+
+  @@unique([activityId, userId])
+}
+
+model ai_diet_plans {
+  id        String   @id
+  userId    String
+  goal      String
+  calories  Float
+  proteinG  Float
+  carbsG    Float
+  fatG      Float
+  allergies String[]
+  plan      Json
+  createdAt DateTime @default(now())
+  users     User     @relation(fields: [userId], references: [id])
+}
+
+model ai_insights {
+  id        String      @id
+  gymId     String
+  userId    String?
+  type      InsightType
+  score     Float
+  summary   String
+  details   Json?
+  createdAt DateTime    @default(now())
+  gyms      Gym         @relation(fields: [gymId], references: [id])
+  users     User?       @relation(fields: [userId], references: [id])
+
+  @@index([gymId, type, score])
+}
+
+model campaign_sends {
+  id                  String              @id
+  campaignId          String
+  userId              String
+  status              String              @default("SENT")
+  sentAt              DateTime            @default(now())
+  openedAt            DateTime?
+  marketing_campaigns marketing_campaigns @relation(fields: [campaignId], references: [id])
+  users               User                @relation(fields: [userId], references: [id])
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+}
+
+model community_groups {
+  id            String          @id
+  gymId         String
+  name          String
+  description   String?
+  visibility    GroupVisibility @default(PUBLIC)
+  imageUrl      String?
+  isOfficial    Boolean         @default(false)
+  topics        String[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  gyms          Gym             @relation(fields: [gymId], references: [id])
+  group_members group_members[]
+  group_posts   group_posts[]
+}
+
+model equipment_bookings {
+  id          String                 @id
+  equipmentId String
+  userId      String
+  startTime   DateTime
+  endTime     DateTime
+  status      EquipmentBookingStatus @default(CONFIRMED)
+  priority    Boolean                @default(false)
+  notes       String?
+  createdAt   DateTime               @default(now())
+  equipments  equipments             @relation(fields: [equipmentId], references: [id])
+  users       User                   @relation(fields: [userId], references: [id])
+
+  @@index([equipmentId, startTime])
+  @@index([userId, startTime])
+}
+
+model equipments {
+  id                 String               @id
+  gymId              String
+  branchId           String?
+  name               String
+  category           String
+  code               String?
+  status             EquipmentStatus      @default(AVAILABLE)
+  slotMinutes        Int                  @default(30)
+  imageUrl           String?
+  notes              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  equipment_bookings equipment_bookings[]
+  branches           Branch?              @relation(fields: [branchId], references: [id])
+  gyms               Gym                  @relation(fields: [gymId], references: [id])
+
+  @@unique([gymId, code])
+}
+
+model event_registrations {
+  id          String     @id
+  eventId     String
+  userId      String
+  qrCode      String     @unique
+  attended    Boolean    @default(false)
+  attendedAt  DateTime?
+  cancelledAt DateTime?
+  createdAt   DateTime   @default(now())
+  gym_events  gym_events @relation(fields: [eventId], references: [id])
+  users       User       @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+}
+
+model food_items {
+  id        String   @id
+  name      String
+  category  String?
+  calories  Float
+  protein   Float
+  carbs     Float
+  fat       Float
+  servingG  Float?
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model gift_card_transactions {
+  id         String     @id
+  cardId     String
+  userId     String?
+  amount     Float
+  reference  String?
+  createdAt  DateTime   @default(now())
+  gift_cards gift_cards @relation(fields: [cardId], references: [id])
+  users      User?      @relation(fields: [userId], references: [id])
+}
+
+model gift_cards {
+  id                                  String                   @id
+  gymId                               String
+  code                                String                   @unique
+  amount                              Float
+  balance                             Float
+  currency                            String                   @default("EUR")
+  status                              GiftCardStatus           @default(ACTIVE)
+  purchaserId                         String?
+  recipientId                         String?
+  recipientEmail                      String?
+  message                             String?
+  expiresAt                           DateTime?
+  campaign                            String?
+  createdAt                           DateTime                 @default(now())
+  gift_card_transactions              gift_card_transactions[]
+  gyms                                Gym                      @relation(fields: [gymId], references: [id])
+  users_gift_cards_purchaserIdTousers User?                    @relation("gift_cards_purchaserIdTousers", fields: [purchaserId], references: [id])
+  users_gift_cards_recipientIdTousers User?                    @relation("gift_cards_recipientIdTousers", fields: [recipientId], references: [id])
+}
+
+model group_comments {
+  id          String      @id
+  postId      String
+  authorId    String
+  content     String
+  createdAt   DateTime    @default(now())
+  users       User        @relation(fields: [authorId], references: [id])
+  group_posts group_posts @relation(fields: [postId], references: [id])
+}
+
+model group_members {
+  id               String           @id
+  groupId          String
+  userId           String
+  role             String           @default("MEMBER")
+  joinedAt         DateTime         @default(now())
+  community_groups community_groups @relation(fields: [groupId], references: [id])
+  users            User             @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+model group_posts {
+  id               String           @id
+  groupId          String
+  authorId         String
+  content          String
+  imageUrl         String?
+  likes            Int              @default(0)
+  pinned           Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime
+  group_comments   group_comments[]
+  users            User             @relation(fields: [authorId], references: [id])
+  community_groups community_groups @relation(fields: [groupId], references: [id])
+
+  @@index([groupId, createdAt])
+}
+
+model gym_events {
+  id                  String                @id
+  gymId               String
+  title               String
+  description         String?
+  category            String?
+  location            String?
+  startTime           DateTime
+  endTime             DateTime
+  capacity            Int                   @default(50)
+  price               Float                 @default(0)
+  imageUrl            String?
+  status              EventStatus           @default(REGISTRATION_OPEN)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  event_registrations event_registrations[]
+  gyms                Gym                   @relation(fields: [gymId], references: [id])
+}
+
+model live_class_messages {
+  id           String       @id
+  liveClassId  String
+  userId       String
+  content      String
+  createdAt    DateTime     @default(now())
+  live_classes live_classes @relation(fields: [liveClassId], references: [id])
+  users        User         @relation(fields: [userId], references: [id])
+
+  @@index([liveClassId, createdAt])
+}
+
+model live_class_participants {
+  id           String       @id
+  liveClassId  String
+  userId       String
+  joinedAt     DateTime     @default(now())
+  leftAt       DateTime?
+  live_classes live_classes @relation(fields: [liveClassId], references: [id])
+  users        User         @relation(fields: [userId], references: [id])
+
+  @@unique([liveClassId, userId])
+}
+
+model live_classes {
+  id                      String                    @id
+  gymId                   String
+  hostId                  String
+  title                   String
+  description             String?
+  category                String?
+  startTime               DateTime
+  endTime                 DateTime
+  capacity                Int                       @default(100)
+  streamUrl               String?
+  replayUrl               String?
+  status                  LiveClassStatus           @default(SCHEDULED)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  live_class_messages     live_class_messages[]
+  live_class_participants live_class_participants[]
+  gyms                    Gym                       @relation(fields: [gymId], references: [id])
+  users                   User                      @relation(fields: [hostId], references: [id])
+}
+
+model locker_bookings {
+  id          String    @id
+  lockerId    String
+  userId      String
+  startedAt   DateTime  @default(now())
+  expectedEnd DateTime?
+  releasedAt  DateTime?
+  abandoned   Boolean   @default(false)
+  unlockToken String?
+  createdAt   DateTime  @default(now())
+  lockers     lockers   @relation(fields: [lockerId], references: [id])
+  users       User      @relation(fields: [userId], references: [id])
+
+  @@index([lockerId, releasedAt])
+  @@index([userId, releasedAt])
+}
+
+model lockers {
+  id              String            @id
+  gymId           String
+  branchId        String?
+  code            String
+  zone            String?
+  size            String?
+  status          LockerStatus      @default(AVAILABLE)
+  hasBluetooth    Boolean           @default(false)
+  hasNfc          Boolean           @default(false)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  locker_bookings locker_bookings[]
+  branches        Branch?           @relation(fields: [branchId], references: [id])
+  gyms            Gym               @relation(fields: [gymId], references: [id])
+
+  @@unique([gymId, code])
+}
+
+model loyalty_accounts {
+  id                   String                 @id
+  userId               String                 @unique
+  points               Int                    @default(0)
+  lifetimePoints       Int                    @default(0)
+  tier                 String                 @default("Bronze")
+  updatedAt            DateTime
+  users                User                   @relation(fields: [userId], references: [id])
+  loyalty_transactions loyalty_transactions[]
+}
+
+model loyalty_rewards {
+  id          String   @id
+  gymId       String
+  name        String
+  description String?
+  costPoints  Int
+  stock       Int?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  gyms        Gym      @relation(fields: [gymId], references: [id])
+}
+
+model loyalty_tiers {
+  id         String   @id
+  gymId      String
+  name       String
+  minPoints  Int      @default(0)
+  perks      String[]
+  multiplier Float    @default(1)
+  color      String?  @default("#a3a3a3")
+  createdAt  DateTime @default(now())
+  gyms       Gym      @relation(fields: [gymId], references: [id])
+
+  @@unique([gymId, name])
+}
+
+model loyalty_transactions {
+  id               String           @id
+  accountId        String
+  userId           String
+  type             LoyaltyTxnType
+  points           Int
+  reason           String
+  reference        String?
+  createdAt        DateTime         @default(now())
+  loyalty_accounts loyalty_accounts @relation(fields: [accountId], references: [id])
+  users            User             @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model marketing_campaigns {
+  id             String           @id
+  gymId          String
+  name           String
+  subject        String?
+  body           String
+  channel        CampaignChannel
+  segment        SegmentKey
+  trigger        String?
+  status         CampaignStatus   @default(DRAFT)
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  campaign_sends campaign_sends[]
+  gyms           Gym              @relation(fields: [gymId], references: [id])
+}
+
+model meal_plan_days {
+  id              String            @id
+  planId          String
+  dayNumber       Int
+  meal_plans      meal_plans        @relation(fields: [planId], references: [id])
+  meal_plan_meals meal_plan_meals[]
+}
+
+model meal_plan_meals {
+  id             String         @id
+  dayId          String
+  type           String
+  name           String
+  calories       Float?
+  protein        Float?
+  carbs          Float?
+  fat            Float?
+  recipe         String?
+  meal_plan_days meal_plan_days @relation(fields: [dayId], references: [id])
+}
+
+model meal_plans {
+  id                               String           @id
+  memberId                         String
+  authorId                         String?
+  title                            String
+  goal                             String?
+  calories                         Float?
+  proteinG                         Float?
+  carbsG                           Float?
+  fatG                             Float?
+  notes                            String?
+  isActive                         Boolean          @default(true)
+  createdAt                        DateTime         @default(now())
+  updatedAt                        DateTime
+  gymId                            String?
+  meal_plan_days                   meal_plan_days[]
+  users_meal_plans_authorIdTousers User?            @relation("meal_plans_authorIdTousers", fields: [authorId], references: [id])
+  gyms                             Gym?             @relation(fields: [gymId], references: [id])
+  users_meal_plans_memberIdTousers User             @relation("meal_plans_memberIdTousers", fields: [memberId], references: [id])
+}
+
+model program_days {
+  id         String   @id
+  programId  String
+  weekNumber Int
+  dayNumber  Int
+  title      String?
+  content    Json
+  videoUrl   String?
+  programs   programs @relation(fields: [programId], references: [id])
+
+  @@unique([programId, weekNumber, dayNumber])
+}
+
+model program_enrollments {
+  id          String           @id
+  programId   String
+  userId      String
+  startedAt   DateTime         @default(now())
+  status      EnrollmentStatus @default(ACTIVE)
+  currentWeek Int              @default(1)
+  currentDay  Int              @default(1)
+  completedAt DateTime?
+  progress    Float            @default(0)
+  programs    programs         @relation(fields: [programId], references: [id])
+  users       User             @relation(fields: [userId], references: [id])
+
+  @@unique([programId, userId])
+}
+
+model programs {
+  id                  String                @id
+  gymId               String
+  authorId            String?
+  title               String
+  description         String?
+  goal                String?
+  level               ProgramLevel          @default(BEGINNER)
+  weeks               Int                   @default(4)
+  imageUrl            String?
+  isPublished         Boolean               @default(false)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  program_days        program_days[]
+  program_enrollments program_enrollments[]
+  users               User?                 @relation(fields: [authorId], references: [id])
+  gyms                Gym                   @relation(fields: [gymId], references: [id])
+}
+
+model stock_movements {
+  id        String        @id
+  productId String
+  type      StockMoveType
+  quantity  Int
+  reason    String?
+  reference String?
+  createdAt DateTime      @default(now())
+
+  @@index([productId, createdAt])
+}
+
+model suppliers {
+  id        String   @id
+  gymId     String
+  name      String
+  contact   String?
+  email     String?
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  gyms      Gym      @relation(fields: [gymId], references: [id])
+}
+
+model system_events {
+  id        String   @id
+  name      String
+  gymId     String?
+  userId    String?
+  payload   Json?
+  createdAt DateTime @default(now())
+  gyms      Gym?     @relation(fields: [gymId], references: [id])
+  users     User?    @relation(fields: [userId], references: [id])
+
+  @@index([gymId, name, createdAt])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  GYM_OWNER
+  BRANCH_MANAGER
+  RECEPTIONIST
+  TRAINER
+  MEMBER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  FROZEN
+  CANCELLED
+  EXPIRED
+  PENDING
+}
+
+enum MembershipType {
+  MONTHLY
+  ANNUAL
+  PAY_PER_VISIT
+  FAMILY
+  STUDENT
+  CORPORATE
+  DAY_PASS
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentMethod {
+  STRIPE
+  PAYPAL
+  APPLE_PAY
+  GOOGLE_PAY
+  BANK_TRANSFER
+  CASH
+}
+
+enum AttendanceMethod {
+  QR_CODE
+  RFID
+  FACE_RECOGNITION
+  MOBILE_APP
+  RECEPTION
+  MANUAL
+}
+
+enum ClassStatus {
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  WAITLISTED
+  CANCELLED
+  NO_SHOW
+  ATTENDED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum StaffShiftStatus {
+  SCHEDULED
+  CHECKED_IN
+  CHECKED_OUT
+  ABSENT
+}
+
+enum GymPlanTier {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum GymStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  CANCELLED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TransactionType {
+  SUBSCRIPTION
+  CLASS_BOOKING
+  PT_SESSION
+  PRODUCT_SALE
+  REFUND
+  PENALTY
+}
+
+enum AccessResult {
+  ALLOWED
+  DENIED
+  OVERRIDE
+}
+
+enum ActivityStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum CampaignChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+  IN_APP
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  DROPPED
+}
+
+enum EquipmentBookingStatus {
+  PENDING
+  CONFIRMED
+  WAITLISTED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  RETIRED
+}
+
+enum EventStatus {
+  SCHEDULED
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum GiftCardStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+
+enum GroupVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum InsightType {
+  CHURN_RISK
+  UPGRADE_PROPENSITY
+  INACTIVITY
+  HIGH_ENGAGEMENT
+  REVENUE_POTENTIAL
+}
+
+enum LiveClassStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum LockerStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+enum LoyaltyTxnType {
+  EARN
+  REDEEM
+  ADJUST
+  EXPIRE
+}
+
+enum ProgramLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum SegmentKey {
+  ALL
+  ACTIVE
+  INACTIVE_7D
+  INACTIVE_30D
+  CHURN_RISK
+  EXPIRING_7D
+  NEW_MEMBERS_30D
+  HIGH_VALUE
+  TRIAL
+}
+
+enum StockMoveType {
+  PURCHASE
+  SALE
+  ADJUSTMENT
+  RETURN
+  EXPIRY
+}

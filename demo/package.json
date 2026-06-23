@@ -1,0 +1,11 @@
+{
+  "name": "gymflow-demo",
+  "version": "1.0.0",
+  "description": "GymFlow demo — static, no backend, no database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "MIT"
+}
