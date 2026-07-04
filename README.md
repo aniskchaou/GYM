@@ -1,6 +1,7 @@
 # GymFlow SaaS
 
-> Professional gym fitness management SaaS — built with Next.js, NestJS, PostgreSQL, Prisma, and Stripe.
+> Professional gym & fitness management SaaS — built with Next.js, NestJS, PostgreSQL, Prisma, and Stripe.
+> Supports gyms, standalone personal trainers, yoga/Pilates studios, online coaches, and wellness professionals.
 
 ---
 
@@ -13,6 +14,7 @@ gymflow-saas/
 │   └── api/                  # NestJS — REST API backend
 ├── packages/
 │   └── database/             # Prisma schema + migrations + seed
+├── demo/                     # Static demo SPA (port 3001) — all roles, no server required
 ├── .env.example
 ├── turbo.json
 └── package.json
@@ -45,6 +47,10 @@ gymflow-saas/
 - [x] Receptionist dashboard
 - [x] Reports & analytics
 - [x] Notifications (email via SendGrid, SMS via Twilio)
+- [x] **Training content publishing** — trainers publish videos, audio, PDFs, and live streams; members browse and track progress
+- [x] **File uploads** — video (500 MB), audio (100 MB), PDF (20 MB), image thumbnails served as static files
+- [x] **Super Admin portal** — SaaS-level tenant management, gym billing, and platform analytics
+- [x] **Demo app** — full interactive demo at port 3001, all 6 roles, no backend required
 
 ---
 
@@ -61,9 +67,51 @@ gymflow-saas/
 | Email | SendGrid |
 | SMS | Twilio |
 | Cache | Redis |
-| File Storage | AWS S3 |
+| File Storage | Local disk (`uploads/`) → AWS S3 (production) |
+| File Uploads | Multer (video 500 MB · audio 100 MB · PDF 20 MB) |
 | Realtime | Socket.IO |
 | Monorepo | Turborepo |
+
+---
+
+## Training Content System
+
+Trainers can publish multimedia content for members to consume:
+
+| Content Type | Formats | Max Size |
+|---|---|---|
+| Video | MP4, MOV, WebM | 500 MB |
+| Audio | MP3, WAV, M4A, OGG | 100 MB |
+| PDF / Guide | PDF | 20 MB |
+| Live Stream | Stream URL + scheduled datetime | — |
+
+**Visibility levels**: `PUBLIC` · `MEMBERS_ONLY` · `SUBSCRIBERS_ONLY`
+
+Members get an inline video/audio player, per-video watch-progress tracking, and a live streams banner showing upcoming sessions.
+
+Supported fitness categories: Strength · HIIT · Yoga · Pilates · Cardio · CrossFit · Boxing · Nutrition · Mobility · Meditation · Running · Cycling · Swimming · Dance · Rehabilitation · Mental Wellness
+
+---
+
+## Demo App
+
+A fully interactive static demo runs on **port 3001** with no database required.
+
+```bash
+cd demo
+npm install
+node server.js
+```
+
+Open http://localhost:3001 and log in as any of the 6 roles:
+
+| Role | Email | Password |
+|---|---|---|
+| Super Admin | superadmin@gymflow.com | demo123 |
+| Gym Owner | owner@fitpro.com | demo123 |
+| Receptionist | reception@fitpro.com | demo123 |
+| Trainer | trainer@fitpro.com | demo123 |
+| Member | member@fitpro.com | demo123 |
 
 ---
 
@@ -108,5 +156,5 @@ npm run dev
 | Phase | Timeline | Scope |
 |---|---|---|
 | Phase 1 — MVP | 2–4 months | Auth, Members, Plans, Attendance, Booking, Payments |
-| Phase 2 — Pro | 3–6 months | Mobile apps, Trainer tools, CRM, POS |
-| Phase 3 — Enterprise | 6–12 months | AI features, Hardware integrations, Multi-branch |
+| Phase 2 — Pro | 3–6 months | Mobile apps, Trainer tools, CRM, POS, Training Content |
+| Phase 3 — Enterprise | 6–12 months | AI features, Hardware integrations, Multi-branch, Live streaming infra |
