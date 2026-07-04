@@ -388,6 +388,7 @@ const NAV_ITEMS = [
   { label:'My Clients',      sub:'trainer-clients',  icon:'👥', roles:['TRAINER'] },
   { label:'PT Sessions',     sub:'pt-sessions',      icon:'🤝', roles:['TRAINER'] },
   { label:'Workout Plans',   sub:'workout-plans',    icon:'📋', roles:['TRAINER'] },
+  { label:'My Content',      sub:'trainer-content',  icon:'🎬', roles:['TRAINER'] },
   { label:'Assessments',     sub:'assessments',      icon:'📝', roles:['TRAINER'] },
   { label:'Progress',        sub:'trainer-progress', icon:'📈', roles:['TRAINER'] },
   { label:'Classes',         sub:'classes',          icon:'📅', roles:['TRAINER'] },
@@ -401,6 +402,7 @@ const NAV_ITEMS = [
   { label:'My Profile',      sub:'member-profile',   icon:'👤', roles:['MEMBER'] },
   { label:'My Membership',   sub:'my-membership',    icon:'💎', roles:['MEMBER'] },
   { label:'My Progress',     sub:'member-progress',  icon:'📈', roles:['MEMBER'] },
+  { label:'Training Library',sub:'member-content',   icon:'🎬', roles:['MEMBER'] },
   { label:'Book Classes',    sub:'bookings',         icon:'📆', roles:['MEMBER'] },
   { label:'Classes',         sub:'classes',          icon:'📅', roles:['MEMBER'] },
   { label:'Workout Plans',   sub:'workout-plans',    icon:'📋', roles:['MEMBER'] },
@@ -479,6 +481,7 @@ function showSub(sub) {
     'leads':'Leads','policies':'Policies','register-member':'Register Member',
     'invoices':'Invoices','trainer-progress':'Progress',
     'sa-users':'All Users','sa-gyms':'All Gyms','sa-subscriptions':'Subscriptions',
+    'trainer-content':'My Content Library','member-content':'Training Library',
   };
   document.getElementById('dash-title').textContent = titles[sub] || 'Dashboard';
   renderSubPage(sub);
@@ -551,6 +554,8 @@ function renderSubPage(sub) {
     case 'member-progress': renderMemberProgress(el); break;
     case 'member-feedback': renderMemberFeedback(el); break;
     case 'member-invoices': renderMemberInvoices(el); break;
+    case 'trainer-content': renderTrainerContent(el); break;
+    case 'member-content':  renderMemberContent(el);  break;
     case 'my-gyms':        renderMyGyms(el);          break;
     case 'approvals':      renderApprovals(el);       break;
     case 'staff':          renderStaff(el);           break;
@@ -1027,6 +1032,17 @@ function renderMemberHome(el) {
           `).join('')}
         </div>
       </div>
+      <!-- Training Library shortcut -->
+      <button onclick="showSub('member-content')"
+        class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 text-white text-left hover:opacity-95 transition-opacity shadow">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-bold text-lg">🎬 Training Library</p>
+            <p class="text-indigo-200 text-sm mt-0.5">Videos, audio, PDFs and live classes from your trainers</p>
+          </div>
+          <span class="text-white text-2xl">›</span>
+        </div>
+      </button>
     </div>
   `;
 }
@@ -1038,9 +1054,10 @@ function renderTrainerHome(el) {
     { label:'My Clients',    sub:'trainer-clients',  icon:'👥', color:'bg-blue-500' },
     { label:'PT Sessions',   sub:'pt-sessions',      icon:'🤝', color:'bg-purple-500' },
     { label:'Workout Plans', sub:'workout-plans',    icon:'🏋️', color:'bg-green-500' },
+    { label:'My Content',    sub:'trainer-content',  icon:'🎬', color:'bg-rose-500' },
     { label:'Assessments',   sub:'assessments',      icon:'📝', color:'bg-amber-500' },
     { label:'Progress',      sub:'trainer-progress', icon:'📈', color:'bg-indigo-500' },
-    { label:'Messages',      sub:'messages',         icon:'💬', color:'bg-rose-500' },
+    { label:'Messages',      sub:'messages',         icon:'💬', color:'bg-slate-500' },
   ];
   el.innerHTML = `
     <div class="space-y-6">
@@ -3824,6 +3841,230 @@ function renderTrainerProgress(el) {
           </tbody>
         </table>
       </div>
+    </div>`;
+}
+
+// ==================== TRAINER CONTENT LIBRARY ====================
+const DEMO_CONTENT = [
+  { id:'tc1', type:'VIDEO',       title:'30-Min Full Body HIIT',         category:'HIIT',             duration:1800, views:342, tags:['hiit','beginner','no-equipment'], visibility:'PUBLIC',       isPublished:true,  desc:'A no-equipment full-body circuit designed for all levels. Torches calories in 30 minutes.' },
+  { id:'tc2', type:'VIDEO',       title:'Upper Body Strength — Beginner', category:'Strength Training',duration:2700, views:218, tags:['strength','beginner','dumbbells'], visibility:'MEMBERS_ONLY', isPublished:true,  desc:'Progressive overload dumbbell routine focusing on push and pull mechanics.' },
+  { id:'tc3', type:'AUDIO',       title:'Morning Motivation Run Mix',     category:'Cardio',           duration:3600, views:95,  tags:['cardio','running','motivation'],   visibility:'PUBLIC',       isPublished:true,  desc:'Guided running commentary over energising beats. Perfect for outdoor sessions.' },
+  { id:'tc4', type:'PDF',         title:'Nutrition Fundamentals Guide',   category:'Nutrition',        duration:null, views:187, tags:['nutrition','macro','beginner'],    visibility:'MEMBERS_ONLY', isPublished:true,  desc:'A 12-page evidence-based guide to macronutrients, meal timing and recovery.' },
+  { id:'tc5', type:'PDF',         title:'7-Day Mobility Programme',       category:'Mobility',         duration:null, views:142, tags:['mobility','recovery','stretching'],'visibility':'MEMBERS_ONLY', isPublished:true, desc:'Daily 15-minute routines to improve flexibility and reduce injury risk.' },
+  { id:'tc6', type:'LIVE_STREAM', title:'Live Q&A — Ask the Trainer',     category:'Other',            duration:null, views:0,   tags:['live','q&a'],                      visibility:'PUBLIC',       isPublished:true,  liveStreamAt:'2025-07-10T18:00:00', liveStreamUrl:'https://zoom.us/j/demo', desc:'Open Q&A session — bring your fitness questions!' },
+  { id:'tc7', type:'VIDEO',       title:'Yoga Flow — Hip Openers',        category:'Yoga',             duration:2400, views:276, tags:['yoga','flexibility','beginner'],   visibility:'MEMBERS_ONLY', isPublished:true,  desc:'60-minute hip-focused vinyasa flow. Props optional.' },
+  { id:'tc8', type:'VIDEO',       title:'Core & Abs 15-Min Blast',        category:'HIIT',             duration:900,  views:410, tags:['core','abs','hiit'],               visibility:'PUBLIC',       isPublished:true,  desc:'15 minutes, no rest — pure core fire. Add to any session.' },
+  { id:'tc9', type:'AUDIO',       title:'Guided Breathing for Recovery',  category:'Mental Wellness',  duration:1200, views:63,  tags:['breathing','recovery','mindset'],  visibility:'MEMBERS_ONLY', isPublished:false, desc:'Box breathing and diaphragmatic techniques for post-workout recovery.' },
+];
+
+const TYPE_BADGE = {
+  VIDEO:       { icon:'🎬', cls:'bg-blue-100 text-blue-700' },
+  AUDIO:       { icon:'🎵', cls:'bg-purple-100 text-purple-700' },
+  PDF:         { icon:'📄', cls:'bg-orange-100 text-orange-700' },
+  LIVE_STREAM: { icon:'📡', cls:'bg-red-100 text-red-700' },
+};
+
+function fmtSec(sec) {
+  if (!sec) return null;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+let tcFilter = 'ALL';
+
+function renderTrainerContent(el) {
+  const TYPES = ['ALL','VIDEO','AUDIO','PDF','LIVE_STREAM'];
+  const filtered = tcFilter === 'ALL' ? DEMO_CONTENT : DEMO_CONTENT.filter(c => c.type === tcFilter);
+  const stats = {
+    total: DEMO_CONTENT.length,
+    published: DEMO_CONTENT.filter(c => c.isPublished).length,
+    views: DEMO_CONTENT.reduce((s,c) => s + c.views, 0),
+    videos: DEMO_CONTENT.filter(c => c.type === 'VIDEO').length,
+  };
+
+  el.innerHTML = `
+    <div class="space-y-6">
+      <!-- Header -->
+      <div class="flex items-start justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">My Content Library</h2>
+          <p class="text-sm text-slate-500 mt-0.5">Publish videos, audio, PDFs and live streams for your clients</p>
+        </div>
+        <button onclick="showDemoToast('📤 Upload form would open here')"
+          class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm">
+          ＋ Publish Content
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        ${[
+          {label:'Total Items',icon:'📦',value:stats.total,  cls:'bg-slate-100 text-slate-600'},
+          {label:'Published',  icon:'🌐',value:stats.published, cls:'bg-green-100 text-green-600'},
+          {label:'Total Views',icon:'📊',value:stats.views,  cls:'bg-blue-100 text-blue-600'},
+          {label:'Videos',     icon:'▶️', value:stats.videos, cls:'bg-purple-100 text-purple-600'},
+        ].map(s=>`
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+            <div class="w-9 h-9 ${s.cls} rounded-xl flex items-center justify-center mx-auto mb-2 text-base">${s.icon}</div>
+            <p class="text-2xl font-bold text-slate-800">${s.value}</p>
+            <p class="text-xs text-slate-500 mt-0.5">${s.label}</p>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Type filter -->
+      <div class="flex gap-2 flex-wrap">
+        ${TYPES.map(t=>`
+          <button onclick="tcFilter='${t}'; renderSubPage('trainer-content')"
+            class="text-xs font-semibold px-3 py-1.5 rounded-xl border transition-colors ${tcFilter===t ? 'bg-green-600 text-white border-green-600' : 'bg-white text-slate-600 border-slate-200 hover:border-green-300'}">
+            ${t.replace('_',' ')}
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- Content grid -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        ${filtered.map(item=>{
+          const badge = TYPE_BADGE[item.type] || TYPE_BADGE.VIDEO;
+          const dur = fmtSec(item.duration);
+          return `
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+              <div class="relative h-36 bg-slate-100 flex items-center justify-center">
+                <span class="text-5xl opacity-20">${badge.icon}</span>
+                <span class="absolute top-2 left-2 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.cls}">${badge.icon} ${item.type.replace('_',' ')}</span>
+                ${item.isPublished
+                  ? '<span class="absolute top-2 right-2 text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">Published</span>'
+                  : '<span class="absolute top-2 right-2 text-xs bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded-full">Draft</span>'}
+                ${dur ? `<span class="absolute bottom-2 right-2 text-xs bg-black/60 text-white px-2 py-0.5 rounded">${dur}</span>` : ''}
+              </div>
+              <div class="p-4 flex flex-col flex-1">
+                <h3 class="font-semibold text-slate-800 text-sm">${item.title}</h3>
+                <p class="text-xs text-indigo-600 mt-0.5">${item.category}</p>
+                <p class="text-xs text-slate-400 mt-1 line-clamp-2">${item.desc}</p>
+                <div class="flex items-center gap-3 mt-2 text-xs text-slate-400">
+                  <span>👁 ${item.views}</span>
+                  <span>🔒 ${item.visibility.replace('_',' ')}</span>
+                </div>
+                <div class="flex items-center gap-3 mt-auto pt-3 border-t border-slate-50">
+                  <button onclick="showDemoToast('✏️ Edit: ${item.title}')" class="text-xs text-slate-500 hover:text-indigo-600">✏️ Edit</button>
+                  <button onclick="showDemoToast('${item.isPublished ? '⬇️ Unpublished' : '🌐 Published'}: ${item.title}')" class="text-xs text-slate-500 hover:text-green-600">
+                    ${item.isPublished ? '🔕 Unpublish' : '🌐 Publish'}
+                  </button>
+                  <button onclick="showDemoToast('🗑 Deleted: ${item.title}')" class="text-xs text-slate-500 hover:text-red-500 ml-auto">🗑</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Upload hint -->
+      <div class="bg-gradient-to-r from-green-600 to-teal-700 rounded-2xl p-5 text-white">
+        <h3 class="font-bold mb-1">📤 Upload New Content</h3>
+        <p class="text-green-200 text-sm mb-3">Supports videos (MP4/MOV/WebM), audio (MP3/WAV/M4A), PDFs and scheduled live streams.</p>
+        <button onclick="showDemoToast('📤 Upload panel — available in the full app')"
+          class="bg-white text-green-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-green-50 transition-colors">
+          Upload a file →
+        </button>
+      </div>
+    </div>`;
+}
+
+// ==================== MEMBER CONTENT LIBRARY ====================
+let mcFilter = 'ALL';
+let mcSearch = '';
+
+function renderMemberContent(el) {
+  const TYPES = ['ALL','VIDEO','AUDIO','PDF','LIVE_STREAM'];
+  const published = DEMO_CONTENT.filter(c => c.isPublished);
+  const live = published.filter(c => c.type === 'LIVE_STREAM');
+  const rest = published.filter(c => {
+    const matchType = mcFilter === 'ALL' || c.type === mcFilter;
+    const matchSearch = !mcSearch || c.title.toLowerCase().includes(mcSearch.toLowerCase()) || c.category.toLowerCase().includes(mcSearch.toLowerCase());
+    return c.type !== 'LIVE_STREAM' && matchType && matchSearch;
+  });
+
+  el.innerHTML = `
+    <div class="space-y-6">
+      <div>
+        <h2 class="text-xl font-bold text-slate-800">Training Library</h2>
+        <p class="text-sm text-slate-500 mt-0.5">Videos, audio sessions, guides and live classes from your trainers</p>
+      </div>
+
+      <!-- Search + filter -->
+      <div class="flex gap-2 flex-wrap">
+        <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 flex-1 min-w-52 focus-within:border-indigo-400 transition-colors">
+          <span class="text-slate-400 text-sm">🔍</span>
+          <input id="mc-search" value="${mcSearch}" oninput="mcSearch=this.value; renderSubPage('member-content')"
+            placeholder="Search content…"
+            class="flex-1 text-sm text-slate-700 outline-none placeholder:text-slate-400 bg-transparent"/>
+        </div>
+      </div>
+
+      <!-- Type tabs -->
+      <div class="flex gap-2 flex-wrap">
+        ${TYPES.map(t=>`
+          <button onclick="mcFilter='${t}'; renderSubPage('member-content')"
+            class="text-xs font-semibold px-3 py-1.5 rounded-xl border transition-colors ${mcFilter===t ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}">
+            ${t.replace('_',' ')}
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- Live streams -->
+      ${live.length && mcFilter === 'ALL' ? `
+        <div class="bg-gradient-to-r from-red-600 to-rose-700 rounded-2xl p-5 text-white">
+          <div class="flex items-center gap-2 mb-3"><span>📡</span><h3 class="font-bold">Upcoming Live Classes</h3></div>
+          ${live.map(item=>`
+            <div class="bg-white/10 rounded-xl px-4 py-3 flex items-center justify-between mb-2">
+              <div>
+                <p class="font-semibold text-sm">${item.title}</p>
+                <p class="text-red-200 text-xs mt-0.5">Jordan Lee · ${new Date(item.liveStreamAt).toLocaleString()}</p>
+              </div>
+              <button onclick="showDemoToast('🔗 Opening live stream: ${item.title}')"
+                class="flex items-center gap-1.5 bg-white text-red-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                🔗 Join
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Content grid -->
+      ${rest.length === 0 ? `
+        <div class="bg-white rounded-2xl border border-slate-100 py-16 text-center">
+          <p class="text-3xl mb-3">🎬</p>
+          <p class="text-slate-500 font-medium">No content matches your filter</p>
+        </div>
+      ` : `
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${rest.map(item=>{
+            const badge = TYPE_BADGE[item.type] || TYPE_BADGE.VIDEO;
+            const dur = fmtSec(item.duration);
+            return `
+              <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col cursor-pointer"
+                onclick="showDemoToast('▶️ Playing: ${item.title}')">
+                <div class="relative h-36 bg-slate-100 flex items-center justify-center">
+                  <span class="text-5xl opacity-20">${badge.icon}</span>
+                  <span class="absolute top-2 left-2 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.cls}">${badge.icon} ${item.type.replace('_',' ')}</span>
+                  ${item.type === 'VIDEO' ? '<div class="absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm"><span class="text-white text-2xl">▶</span></div></div>' : ''}
+                  ${dur ? `<span class="absolute bottom-2 right-2 text-xs bg-black/60 text-white px-2 py-0.5 rounded">${dur}</span>` : ''}
+                </div>
+                <div class="p-4 flex flex-col flex-1">
+                  <h3 class="font-semibold text-slate-800 text-sm">${item.title}</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">Jordan Lee · ${item.category}</p>
+                  <p class="text-xs text-slate-400 mt-1 line-clamp-2">${item.desc}</p>
+                  <div class="flex items-center gap-3 mt-auto pt-3 border-t border-slate-50 text-xs text-slate-400">
+                    <span>👁 ${item.views} views</span>
+                    ${item.type === 'PDF' ? `<button onclick="event.stopPropagation(); showDemoToast('📄 Downloading PDF: ${item.title}')" class="ml-auto text-orange-600 text-xs font-medium hover:text-orange-700">⬇ Download</button>` : ''}
+                    ${item.type === 'AUDIO' ? '<span class="ml-auto text-purple-600 font-medium text-xs">🎵 Tap to play</span>' : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `}
     </div>`;
 }
 

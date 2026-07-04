@@ -58,6 +58,7 @@ model Gym {
   marketing_campaigns    marketing_campaigns[]
   meal_plans             meal_plans[]
   membershipPlans        MembershipPlan[]
+  trainingContent        TrainingContent[]
   notifications          NotificationTemplate[]
   products               Product[]
   programs               programs[]
@@ -186,6 +187,8 @@ model User {
   staffShifts                              StaffShift[]
   system_events                            system_events[]
   trainerProfile                           TrainerProfile?
+  trainingContent                          TrainingContent[]
+  contentViews                             ContentView[]
   branch                                   Branch?                   @relation(fields: [branchId], references: [id])
   gym                                      Gym?                      @relation(fields: [gymId], references: [id])
 
@@ -1477,4 +1480,61 @@ enum StockMoveType {
   ADJUSTMENT
   RETURN
   EXPIRY
+}
+
+// ── Training Content ────────────────────────────────────────────────────────
+
+enum ContentType {
+  VIDEO
+  AUDIO
+  PDF
+  LIVE_STREAM
+}
+
+enum ContentVisibility {
+  PUBLIC
+  MEMBERS_ONLY
+  SUBSCRIBERS_ONLY
+}
+
+model TrainingContent {
+  id           String            @id @default(cuid())
+  trainerId    String
+  gymId        String?
+  title        String
+  description  String?
+  type         ContentType
+  fileUrl      String?
+  thumbnailUrl String?
+  duration     Int?
+  category     String?
+  tags         String[]          @default([])
+  visibility   ContentVisibility @default(MEMBERS_ONLY)
+  isPublished  Boolean           @default(false)
+  publishedAt  DateTime?
+  viewCount    Int               @default(0)
+  liveStreamAt DateTime?
+  liveStreamUrl String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  trainer      User              @relation(fields: [trainerId], references: [id])
+  gym          Gym?              @relation(fields: [gymId], references: [id])
+  views        ContentView[]
+
+  @@index([trainerId])
+  @@index([gymId])
+  @@index([type, isPublished])
+}
+
+model ContentView {
+  id        String          @id @default(cuid())
+  contentId String
+  userId    String
+  watchedAt DateTime        @default(now())
+  progress  Int             @default(0)
+  content   TrainingContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id])
+
+  @@unique([contentId, userId])
+  @@index([userId])
 }

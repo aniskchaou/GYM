@@ -9,7 +9,7 @@ import {
   UserCog, Clock, ChevronDown, ChevronRight,
   Package, KeyRound, DollarSign, Briefcase, ShieldCheck, FileText,
   Wrench, TrendingUp, CheckSquare, Plus, ClipboardList,
-  User, Activity, Star,
+  User, Activity, Star, PlayCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { useRouter } from 'next/navigation';
@@ -88,6 +88,7 @@ const navItems: NavItem[] = [
   { label: 'My Clients',    href: '/dashboard/trainer/clients',   icon: Users,           roles: ['TRAINER'] },
   { label: 'PT Sessions',   href: '/dashboard/pt-sessions',       icon: Calendar,        roles: ['TRAINER'] },
   { label: 'Workout Plans', href: '/dashboard/workout-plans',     icon: Dumbbell,        roles: ['TRAINER'] },
+  { label: 'My Content',    href: '/dashboard/trainer/content',   icon: PlayCircle,      roles: ['TRAINER'] },
   { label: 'Assessments',   href: '/dashboard/assessments',       icon: ClipboardList,   roles: ['TRAINER'] },
   { label: 'Progress',      href: '/dashboard/trainer/progress',  icon: TrendingUp,      roles: ['TRAINER'] },
   { label: 'Classes',       href: '/dashboard/classes',           icon: Calendar,        roles: ['TRAINER'] },
@@ -100,6 +101,7 @@ const navItems: NavItem[] = [
   { label: 'My Profile',     href: '/dashboard/member/profile',      icon: User,            roles: ['MEMBER'] },
   { label: 'My Membership',  href: '/dashboard/my-membership',       icon: CreditCard,      roles: ['MEMBER'] },
   { label: 'My Progress',    href: '/dashboard/member/progress',     icon: TrendingUp,      roles: ['MEMBER'] },
+  { label: 'Training Library', href: '/dashboard/member/content',    icon: PlayCircle,      roles: ['MEMBER'] },
   { label: 'Book Classes',   href: '/dashboard/bookings',            icon: Calendar,        roles: ['MEMBER'] },
   { label: 'Classes',        href: '/dashboard/classes',             icon: Calendar,        roles: ['MEMBER'] },
   { label: 'Workout Plans',  href: '/dashboard/workout-plans',       icon: Dumbbell,        roles: ['MEMBER'] },

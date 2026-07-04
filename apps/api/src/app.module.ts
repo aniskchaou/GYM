@@ -22,6 +22,7 @@ import { BranchesModule } from './branches/branches.module';
 import { WorkoutsModule } from './workouts/workouts.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { TrainingContentModule } from './training-content/training-content.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     WorkoutsModule,
     UploadsModule,
     DashboardModule,
+    TrainingContentModule,
   ],
 })
 export class AppModule {}

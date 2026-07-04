@@ -1,7 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Users, Dumbbell, Plus, ClipboardList, MessageSquare, TrendingUp, Activity } from 'lucide-react';
+import {
+  Calendar, Users, Dumbbell, Plus, ClipboardList, MessageSquare, TrendingUp, Activity, PlayCircle,
+} from 'lucide-react';
 import api from '@/lib/api';
 import { formatDatetime } from '@/lib/utils';
 import Link from 'next/link';
@@ -31,9 +33,10 @@ export default function TrainerDashboardPage() {
     { label: 'My Clients',     href: '/dashboard/trainer/clients',   icon: Users,         color: 'bg-blue-500' },
     { label: 'PT Sessions',    href: '/dashboard/pt-sessions',        icon: Calendar,      color: 'bg-purple-500' },
     { label: 'Workout Plans',  href: '/dashboard/workout-plans',      icon: Dumbbell,      color: 'bg-green-500' },
+    { label: 'My Content',     href: '/dashboard/trainer/content',    icon: PlayCircle,    color: 'bg-rose-500' },
     { label: 'Assessments',    href: '/dashboard/assessments',        icon: ClipboardList, color: 'bg-amber-500' },
     { label: 'Progress',       href: '/dashboard/trainer/progress',   icon: TrendingUp,    color: 'bg-indigo-500' },
-    { label: 'Messages',       href: '/dashboard/messages',           icon: MessageSquare, color: 'bg-rose-500' },
+    { label: 'Messages',       href: '/dashboard/messages',           icon: MessageSquare, color: 'bg-slate-500' },
   ];
 
   return (
