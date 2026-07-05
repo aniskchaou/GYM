@@ -29,6 +29,29 @@ export class MembersController {
     return this.membersService.getMembershipCard(memberId);
   }
 
+  @Get('me/measurements')
+  @Roles(UserRole.MEMBER)
+  @ApiOperation({ summary: 'Get current member body measurements' })
+  myMeasurements(@CurrentUser('id') memberId: string) {
+    return this.membersService.getMyMeasurements(memberId);
+  }
+
+  @Post('me/measurements')
+  @Roles(UserRole.MEMBER)
+  @ApiOperation({ summary: 'Add body measurement for current member' })
+  addMyMeasurement(@CurrentUser('id') memberId: string, @Body() dto: any) {
+    return this.membersService.addBodyMeasurement(memberId, dto);
+  }
+
+  // ─── Pending membership approvals ───────────────────────────────────────
+
+  @Get('pending-memberships')
+  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.RECEPTIONIST)
+  @ApiOperation({ summary: 'List members with pending memberships' })
+  pendingMemberships(@CurrentUser('gymId') gymId: string) {
+    return this.membersService.getPendingMemberships(gymId);
+  }
+
   @Get(':id')
   @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.RECEPTIONIST, UserRole.SUPER_ADMIN, UserRole.TRAINER)
   @ApiOperation({ summary: 'Get member details' })
@@ -95,15 +118,6 @@ export class MembersController {
   @ApiOperation({ summary: 'Resolve a member complaint' })
   resolveComplaint(@Param('ticketId') ticketId: string, @CurrentUser('gymId') gymId: string) {
     return this.membersService.resolveComplaint(ticketId, gymId);
-  }
-
-  // ─── Pending membership approvals ───────────────────────────────────────
-
-  @Get('pending-memberships')
-  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.RECEPTIONIST)
-  @ApiOperation({ summary: 'List members with pending memberships' })
-  pendingMemberships(@CurrentUser('gymId') gymId: string) {
-    return this.membersService.getPendingMemberships(gymId);
   }
 
   @Post(':id/measurements')

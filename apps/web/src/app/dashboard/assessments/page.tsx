@@ -18,23 +18,21 @@ export default function AssessmentsPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(!!params.get('memberId'));
   const [form, setForm] = useState({ ...EMPTY_FORM, memberId: params.get('memberId') ?? '' });
-  const [assessments, setAssessments] = useState<any[]>([]);
 
   const { data: clients = [] } = useQuery<any[]>({
     queryKey: ['trainer-clients'],
     queryFn: () => api.get('/trainers/my/clients').then(r => r.data),
   });
 
+  const { data: assessments = [] } = useQuery<any[]>({
+    queryKey: ['trainer-assessments'],
+    queryFn: () => api.get('/trainers/my/assessments').then(r => r.data),
+  });
+
   const createMut = useMutation({
     mutationFn: (dto: any) => api.post('/trainers/my/assessment', dto).then(r => r.data),
-    onSuccess: (data) => {
-      const client = clients.find(c => c.id === form.memberId);
-      setAssessments(prev => [{
-        id: Date.now(),
-        memberName: client ? `${client.firstName} ${client.lastName}` : form.memberId,
-        ...data,
-        date: new Date().toLocaleDateString(),
-      }, ...prev]);
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['trainer-assessments'] });
       toast.success('Assessment saved');
       setShowForm(false);
       setForm({ ...EMPTY_FORM });
@@ -70,22 +68,16 @@ export default function AssessmentsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {assessments.map(a => (
+          {assessments.map((a: any) => (
             <div key={a.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-semibold text-slate-800">{a.memberName}</p>
-                  <p className="text-xs text-slate-400">{a.date}</p>
+                  <p className="font-semibold text-slate-800">{a.member?.user?.firstName} {a.member?.user?.lastName}</p>
+                  <p className="text-xs text-slate-400">{a.date ? new Date(a.date).toLocaleDateString() : '—'}</p>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">{a.fitnessLevel}</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">Assessment</span>
               </div>
-              {a.goals?.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {a.goals.map((g: string) => (
-                    <span key={g} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{g}</span>
-                  ))}
-                </div>
-              )}
+              {a.member?.fitnessGoals?.length > 0 && <p className="text-xs text-slate-500 mt-2">Goals: {Array.isArray(a.member.fitnessGoals) ? a.member.fitnessGoals.join(', ') : a.member.fitnessGoals}</p>}
               {a.notes && <p className="text-sm text-slate-500 mt-2 text-xs">{a.notes}</p>}
             </div>
           ))}

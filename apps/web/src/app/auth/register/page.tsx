@@ -15,7 +15,10 @@ interface GymOption {
 function RegisterForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+  const apiBaseRaw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API = apiBaseRaw.endsWith('/api/v1')
+    ? apiBaseRaw
+    : `${apiBaseRaw.replace(/\/$/, '')}/api/v1`;
 
   const preGymId = searchParams.get('gymId') || '';
   const preGymName = searchParams.get('gymName') || '';
@@ -46,13 +49,26 @@ function RegisterForm() {
     } finally { setLoadingGyms(false); }
   };
 
+  const loadGymProfile = async (gymSlug: string) => {
+    const res = await fetch(`${API}/gyms/profile/${gymSlug}`);
+    if (!res.ok) throw new Error('Failed to load gym details');
+    const data = await res.json();
+    const normalizedGym: GymOption = {
+      ...data,
+      _count: data?._count ?? { users: 0 },
+      membershipPlans: Array.isArray(data?.membershipPlans) ? data.membershipPlans : [],
+    };
+    setSelectedGym(normalizedGym);
+    return normalizedGym;
+  };
+
   useEffect(() => { if (step === 1) searchGyms(); }, [step]);
 
   useEffect(() => {
     if (preGymId && preGymSlug) {
-      fetch(`${API}/gyms/profile/${preGymSlug}`)
-        .then(r => r.json())
-        .then(data => { setSelectedGym(data); setStep(2); });
+      loadGymProfile(preGymSlug)
+        .then(() => setStep(2))
+        .catch(() => setError('Could not load selected gym'));
     }
   }, []);
 
@@ -117,7 +133,7 @@ function RegisterForm() {
              gyms.length === 0 ? <div className="text-center py-8"><p className="text-gray-500">No gyms found</p></div> : (
               <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                 {gyms.map(g => (
-                  <button key={g.id} onClick={() => { setSelectedGym(g); setStep(2); }} className={`w-full text-left p-4 rounded-xl border-2 transition-all hover:border-indigo-400 ${selectedGym?.id === g.id ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
+                  <button key={g.id} onClick={async () => { setError(''); await loadGymProfile(g.slug); setStep(2); }} className={`w-full text-left p-4 rounded-xl border-2 transition-all hover:border-indigo-400 ${selectedGym?.id === g.id ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center overflow-hidden shrink-0">
                         {g.logoUrl ? <img src={g.logoUrl} alt="" className="w-full h-full object-cover" /> : <Dumbbell className="w-6 h-6 text-indigo-400" />}

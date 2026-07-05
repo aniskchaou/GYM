@@ -41,7 +41,7 @@ export class AttendanceController {
       branchId = branch?.id;
     }
     if (!branchId) throw new BadRequestException('No branch found for this gym');
-    return this.service.checkIn({ ...dto, branchId });
+    return this.service.checkIn({ ...dto, gymId, branchId });
   }
 
   @Patch(':id/check-out')
@@ -59,7 +59,7 @@ export class AttendanceController {
   }
 
   @Get('report')
-  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.RECEPTIONIST, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Attendance report for date range' })
   report(
     @CurrentUser('gymId') gymId: string,

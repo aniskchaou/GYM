@@ -10,6 +10,17 @@ import { useAuthStore } from '@/stores/auth.store';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
+function normalizeFeatures(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string');
+  if (typeof value !== 'string' || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return value.split(',').map((item) => item.trim()).filter(Boolean);
+  }
+}
+
 export default function MyMembershipPage() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
@@ -57,12 +68,15 @@ export default function MyMembershipPage() {
   };
 
   const membership = data?.membership ?? data;
+  const normalizedMembership = Array.isArray(membership)
+    ? membership.find((item: any) => item?.status === 'ACTIVE' || item?.status === 'FROZEN') ?? membership[0] ?? null
+    : membership;
 
   if (isLoading) {
     return <div className="bg-white rounded-2xl h-48 shadow-sm animate-pulse" />;
   }
 
-  if (!membership) {
+  if (!normalizedMembership) {
     return (
       <div className="space-y-6">
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 text-center text-white">
@@ -82,9 +96,9 @@ export default function MyMembershipPage() {
                   <p className="font-bold text-slate-800 text-lg">{plan.name}</p>
                   <p className="text-2xl font-extrabold text-indigo-600 mt-1">{formatCurrency(plan.price)}<span className="text-sm font-normal text-slate-400">/mo</span></p>
                 </div>
-                {plan.features?.length > 0 && (
+                {normalizeFeatures(plan.features).length > 0 && (
                   <ul className="space-y-1.5 flex-1">
-                    {plan.features.slice(0, 4).map((f: string) => (
+                    {normalizeFeatures(plan.features).slice(0, 4).map((f: string) => (
                       <li key={f} className="flex items-start gap-2 text-xs text-slate-600"><CheckCircle size={12} className="text-green-500 mt-0.5 shrink-0" />{f}</li>
                     ))}
                   </ul>
@@ -104,12 +118,13 @@ export default function MyMembershipPage() {
     );
   }
 
-  const plan = membership.plan ?? {};
-  const daysLeft = membership.endDate
-    ? Math.max(0, Math.ceil((new Date(membership.endDate).getTime() - Date.now()) / 86400000))
+  const plan = normalizedMembership.plan ?? {};
+  const planFeatures = normalizeFeatures((plan as any).features);
+  const daysLeft = normalizedMembership.endDate
+    ? Math.max(0, Math.ceil((new Date(normalizedMembership.endDate).getTime() - Date.now()) / 86400000))
     : null;
 
-  const statusColor = membership.status === 'ACTIVE' ? 'from-indigo-600 to-purple-600' : 'from-slate-700 to-slate-800';
+  const statusColor = normalizedMembership.status === 'ACTIVE' ? 'from-indigo-600 to-purple-600' : 'from-slate-700 to-slate-800';
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -132,20 +147,20 @@ export default function MyMembershipPage() {
           </div>
           <div>
             <p className="text-white/60 text-xs mb-1">Member #</p>
-            <p className="font-semibold font-mono">{membership.memberNumber ?? membership.member?.memberProfile?.memberNumber ?? '----'}</p>
+            <p className="font-semibold font-mono">{normalizedMembership.memberNumber ?? normalizedMembership.member?.memberProfile?.memberNumber ?? '----'}</p>
           </div>
           <div>
             <p className="text-white/60 text-xs mb-1">Valid from</p>
-            <p className="font-semibold">{membership.startDate ? formatDate(membership.startDate) : '--'}</p>
+            <p className="font-semibold">{normalizedMembership.startDate ? formatDate(normalizedMembership.startDate) : '--'}</p>
           </div>
           <div>
             <p className="text-white/60 text-xs mb-1">Valid until</p>
-            <p className="font-semibold">{membership.endDate ? formatDate(membership.endDate) : 'Ongoing'}</p>
+            <p className="font-semibold">{normalizedMembership.endDate ? formatDate(normalizedMembership.endDate) : 'Ongoing'}</p>
           </div>
         </div>
 
         <div className="flex items-center justify-between bg-white/10 rounded-xl px-4 py-3">
-          <span className="text-sm font-medium">{membership.status}</span>
+          <span className="text-sm font-medium">{normalizedMembership.status}</span>
           {daysLeft !== null && (
             <span className="flex items-center gap-1 text-sm">
               <Clock size={14} />
@@ -173,12 +188,12 @@ export default function MyMembershipPage() {
           </div>
           <div>
             <p className="text-slate-400 text-xs">Renewal</p>
-            <p className="font-medium text-slate-800 mt-0.5">{membership.autoRenew ? 'Auto' : 'Manual'}</p>
+            <p className="font-medium text-slate-800 mt-0.5">{normalizedMembership.autoRenew ? 'Auto' : 'Manual'}</p>
           </div>
         </div>
-        {plan.features?.length > 0 && (
+        {planFeatures.length > 0 && (
           <ul className="space-y-2 mt-4 pt-4 border-t border-slate-50">
-            {plan.features.map((f: string) => (
+            {planFeatures.map((f: string) => (
               <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
                 <CheckCircle size={14} className="text-green-500 shrink-0" />
                 {f}
@@ -194,7 +209,7 @@ export default function MyMembershipPage() {
         <div className="grid grid-cols-2 gap-3">
           {/* Renew */}
           <button
-            onClick={() => renewMut.mutate(membership.id)}
+            onClick={() => renewMut.mutate(normalizedMembership.id)}
             disabled={renewMut.isPending}
             className="flex items-center gap-2 justify-center p-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-medium hover:bg-indigo-100 disabled:opacity-50"
           >
@@ -203,18 +218,18 @@ export default function MyMembershipPage() {
           </button>
 
           {/* Freeze / Unfreeze */}
-          {membership.status === 'ACTIVE' ? (
+          {normalizedMembership.status === 'ACTIVE' ? (
             <button
-              onClick={() => freezeMut.mutate({ id: membership.id, on: true })}
+              onClick={() => freezeMut.mutate({ id: normalizedMembership.id, on: true })}
               disabled={freezeMut.isPending}
               className="flex items-center gap-2 justify-center p-3 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 text-sm font-medium hover:bg-sky-100 disabled:opacity-50"
             >
               <Snowflake size={16} />
               {freezeMut.isPending ? 'Freezing…' : 'Freeze Membership'}
             </button>
-          ) : membership.status === 'FROZEN' ? (
+          ) : normalizedMembership.status === 'FROZEN' ? (
             <button
-              onClick={() => freezeMut.mutate({ id: membership.id, on: false })}
+              onClick={() => freezeMut.mutate({ id: normalizedMembership.id, on: false })}
               disabled={freezeMut.isPending}
               className="flex items-center gap-2 justify-center p-3 rounded-xl border border-green-200 bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 disabled:opacity-50"
             >

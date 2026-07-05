@@ -26,6 +26,106 @@ interface NavItem {
   group?: string;
 }
 
+const ROLE_NAV_ORDER: Partial<Record<string, string[]>> = {
+  RECEPTIONIST: [
+    '/dashboard/reception',
+    '/dashboard/attendance',
+    '/dashboard/members',
+    '/dashboard/approvals',
+    '/dashboard/memberships',
+    '/dashboard/classes',
+    '/dashboard/collect-payment',
+    '/dashboard/invoices',
+    '/dashboard/daily-report',
+    '/dashboard/visitors',
+    '/dashboard/members/new',
+    '/dashboard/complaints',
+    '/dashboard/notifications',
+    '/dashboard/change-password',
+  ],
+  TRAINER: [
+    '/dashboard/trainer',
+    '/dashboard/trainer/clients',
+    '/dashboard/pt-sessions',
+    '/dashboard/workout-plans',
+    '/dashboard/classes',
+    '/dashboard/attendance',
+    '/dashboard/assessments',
+    '/dashboard/trainer/progress',
+    '/dashboard/trainer/content',
+    '/dashboard/messages',
+    '/dashboard/workouts',
+    '/dashboard/notifications',
+    '/dashboard/change-password',
+  ],
+  MEMBER: [
+    '/dashboard/member',
+    '/dashboard/member/profile',
+    '/dashboard/my-membership',
+    '/dashboard/bookings',
+    '/dashboard/classes',
+    '/dashboard/workout-plans',
+    '/dashboard/workouts',
+    '/dashboard/member/progress',
+    '/dashboard/ai-diet',
+    '/dashboard/member/content',
+    '/dashboard/messages',
+    '/dashboard/member/invoices',
+    '/dashboard/member/feedback',
+    '/dashboard/notifications',
+    '/dashboard/change-password',
+  ],
+  BRANCH_MANAGER: [
+    '/dashboard/owner',
+    '/dashboard/members',
+    '/dashboard/approvals',
+    '/dashboard/attendance',
+    '/dashboard/staff',
+    '/dashboard/classes',
+    '/dashboard/trainers',
+    '/dashboard/memberships',
+    '/dashboard/payments',
+    '/dashboard/payroll',
+    '/dashboard/schedule',
+    '/dashboard/reports',
+    '/dashboard/equipment',
+    '/dashboard/maintenance',
+    '/dashboard/inventory',
+    '/dashboard/access',
+    '/dashboard/complaints',
+    '/dashboard/leads',
+    '/dashboard/notifications',
+    '/dashboard/settings',
+    '/dashboard/change-password',
+  ],
+  GYM_OWNER: [
+    '/dashboard/owner',
+    '/dashboard/owner/gyms',
+    '/dashboard/members',
+    '/dashboard/approvals',
+    '/dashboard/attendance',
+    '/dashboard/staff',
+    '/dashboard/classes',
+    '/dashboard/trainers',
+    '/dashboard/memberships',
+    '/dashboard/payments',
+    '/dashboard/payroll',
+    '/dashboard/schedule',
+    '/dashboard/reports',
+    '/dashboard/branches',
+    '/dashboard/equipment',
+    '/dashboard/maintenance',
+    '/dashboard/inventory',
+    '/dashboard/access',
+    '/dashboard/complaints',
+    '/dashboard/leads',
+    '/dashboard/policies',
+    '/dashboard/notifications',
+    '/dashboard/settings',
+    '/dashboard/change-password',
+  ],
+};
+
 const navItems: NavItem[] = [
   // ── Super Admin ──────────────────────────────────────────────────────
   { label: 'Overview',        href: '/dashboard/super-admin',              icon: LayoutDashboard, roles: ['SUPER_ADMIN'], group: 'Platform' },
@@ -40,6 +140,7 @@ const navItems: NavItem[] = [
   { label: 'Audit Logs',      href: '/dashboard/audit',                    icon: Shield,          roles: ['SUPER_ADMIN'], group: 'Intelligence' },
   { label: 'System Settings', href: '/dashboard/super-admin/settings',     icon: Settings,        roles: ['SUPER_ADMIN'], group: 'Config' },
   { label: 'Integrations',    href: '/dashboard/super-admin/integrations', icon: Puzzle,          roles: ['SUPER_ADMIN'], group: 'Config' },
+  { label: 'Change Password', href: '/dashboard/change-password',           icon: KeyRound,        roles: ['SUPER_ADMIN'], group: 'Config' },
 
   // ── Gym Owner / Branch Manager ───────────────────────────────────────
   { label: 'Dashboard',      href: '/dashboard/owner',         icon: LayoutDashboard, roles: ['GYM_OWNER', 'BRANCH_MANAGER'] },
@@ -68,6 +169,7 @@ const navItems: NavItem[] = [
   { label: 'My Workouts',    href: '/dashboard/workouts',      icon: Dumbbell,        roles: ['MEMBER', 'TRAINER'] },
   { label: 'Notifications',  href: '/dashboard/notifications', icon: Bell,            roles: ['GYM_OWNER', 'BRANCH_MANAGER', 'RECEPTIONIST', 'TRAINER', 'MEMBER'] },
   { label: 'Settings',       href: '/dashboard/settings',      icon: Settings,        roles: ['GYM_OWNER', 'BRANCH_MANAGER'] },
+  { label: 'Change Password',href: '/dashboard/change-password', icon: KeyRound,      roles: ['GYM_OWNER', 'BRANCH_MANAGER', 'RECEPTIONIST', 'TRAINER', 'MEMBER'] },
 
   // ── Receptionist / Trainer ───────────────────────────────────────────
   { label: 'Dashboard',       href: '/dashboard/reception',      icon: LayoutDashboard, roles: ['RECEPTIONIST'] },
@@ -115,6 +217,30 @@ const navItems: NavItem[] = [
 
 const SA_GROUPS = ['Platform', 'Management', 'Intelligence', 'Config'];
 
+function getVisibleNavItems(role?: string) {
+  if (!role) return [] as NavItem[];
+
+  const matching = navItems.filter((item) => item.roles.includes(role));
+  const deduped = new Map<string, NavItem>();
+
+  for (const item of matching) {
+    deduped.set(item.href, item);
+  }
+
+  const uniqueItems = Array.from(deduped.values());
+  const preferredOrder = ROLE_NAV_ORDER[role];
+
+  if (!preferredOrder) return uniqueItems;
+
+  const rank = new Map(preferredOrder.map((href, index) => [href, index]));
+  return [...uniqueItems].sort((left, right) => {
+    const leftRank = rank.get(left.href) ?? Number.MAX_SAFE_INTEGER;
+    const rightRank = rank.get(right.href) ?? Number.MAX_SAFE_INTEGER;
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    return left.label.localeCompare(right.label);
+  });
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -122,7 +248,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const isSA = user?.role === 'SUPER_ADMIN';
-  const visible = navItems.filter((n) => user && n.roles.includes(user.role));
+  const visible = getVisibleNavItems(user?.role);
 
   const handleLogout = async () => {
     try { await api.post('/auth/logout'); } finally {

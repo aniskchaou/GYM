@@ -13,9 +13,11 @@ import {
   RegisterMemberDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  ChangePasswordDto,
 } from './dto/auth.dto';
 import { UserRole } from '@prisma/client';
 import { randomBytes } from 'crypto';
+import { MailService } from '../common/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +25,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private mail: MailService,
   ) {}
 
   // ── Login ─────────────────────────────────────────────────────────────
@@ -98,7 +101,20 @@ export class AuthService {
       data: { resetToken: token, resetTokenExp: exp },
     });
 
-    // In production: send email with reset link
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/auth/reset-password?token=${token}`;
+
+    try {
+      await this.mail.send({
+        to: user.email,
+        subject: 'Reset your GymFlow password',
+        text: `Use this link to reset your password: ${resetUrl}`,
+        html: `<p>Use this link to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link expires in 1 hour.</p>`,
+      });
+    } catch {
+      // Keep response generic even when email transport is not configured.
+    }
+
     return { message: 'If that email exists, a reset link was sent.' };
   }
 
@@ -119,6 +135,27 @@ export class AuthService {
     });
 
     return { message: 'Password reset successfully' };
+  }
+
+  // ── Change password (authenticated) ──────────────────────────────────
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive) throw new UnauthorizedException('Invalid user');
+
+    const valid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!valid) throw new BadRequestException('Current password is incorrect');
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('New password must be different from current password');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, refreshToken: null },
+    });
+
+    return { message: 'Password changed successfully' };
   }
 
   // ── Logout ────────────────────────────────────────────────────────────

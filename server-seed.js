@@ -78,6 +78,48 @@ var prisma = new PrismaClient();
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hash(pw) { return bcrypt.hash(pw, 10); }
 
+var EXTRA_GYMS = [
+  {
+    name: 'Iron Forge Fitness',
+    slug: 'iron-forge-fitness',
+    city: 'Chicago',
+    country: 'US',
+    email: 'contact@ironforgefit.com',
+    ownerEmail: 'owner.ironforge@example.com',
+    ownerFirstName: 'Alex',
+    ownerLastName: 'Stone',
+    planTier: 'PROFESSIONAL',
+    maxMembers: 1000,
+    maxBranches: 5,
+  },
+  {
+    name: 'Pulse Studio Downtown',
+    slug: 'pulse-studio-downtown',
+    city: 'Miami',
+    country: 'US',
+    email: 'hello@pulsestudio.com',
+    ownerEmail: 'owner.pulse@example.com',
+    ownerFirstName: 'Maya',
+    ownerLastName: 'Reed',
+    planTier: 'STARTER',
+    maxMembers: 100,
+    maxBranches: 1,
+  },
+  {
+    name: 'Summit Strength Club',
+    slug: 'summit-strength-club',
+    city: 'Denver',
+    country: 'US',
+    email: 'admin@summitstrength.com',
+    ownerEmail: 'owner.summit@example.com',
+    ownerFirstName: 'Jordan',
+    ownerLastName: 'Blake',
+    planTier: 'ENTERPRISE',
+    maxMembers: 5000,
+    maxBranches: 20,
+  },
+];
+
 // ── Main seed ─────────────────────────────────────────────────────────────
 async function seed() {
   console.log('\n\uD83C\uDF31  Seeding GymFlow database...\n');
@@ -119,6 +161,55 @@ async function seed() {
     },
   });
   console.log('  \u2713  Branch: ' + branch.name);
+
+  // 2b. Additional discover gyms
+  for (var g of EXTRA_GYMS) {
+    var seededGym = await prisma.gym.upsert({
+      where: { slug: g.slug },
+      update: {},
+      create: {
+        name: g.name,
+        slug: g.slug,
+        email: g.email,
+        city: g.city,
+        country: g.country,
+        timezone: 'America/Chicago',
+        currency: 'USD',
+        status: 'ACTIVE',
+        planTier: g.planTier,
+        maxMembers: g.maxMembers,
+        maxBranches: g.maxBranches,
+      },
+    });
+
+    var mainBranchId = 'branch-' + g.slug;
+    await prisma.branch.upsert({
+      where: { id: mainBranchId },
+      update: {},
+      create: {
+        id: mainBranchId,
+        gymId: seededGym.id,
+        name: 'Main Branch',
+        city: g.city,
+        capacity: 120,
+      },
+    });
+
+    await prisma.user.upsert({
+      where: { email: g.ownerEmail },
+      update: {},
+      create: {
+        gymId: seededGym.id,
+        branchId: mainBranchId,
+        role: 'GYM_OWNER',
+        email: g.ownerEmail,
+        passwordHash: await hash('Owner@1234'),
+        firstName: g.ownerFirstName,
+        lastName: g.ownerLastName,
+        isEmailVerified: true,
+      },
+    });
+  }
 
   // 3. Users
   var superAdmin = await prisma.user.upsert({

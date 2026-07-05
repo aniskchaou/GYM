@@ -64,6 +64,9 @@ export default function AttendancePage() {
     refetchInterval: 60_000,
   });
 
+  const attendanceRows = Array.isArray(todayReport) ? todayReport : (todayReport?.data ?? []);
+  const attendanceTotal = Array.isArray(todayReport) ? todayReport.length : (todayReport?.total ?? attendanceRows.length);
+
   const occupancyPct = occupancy?.percentage ?? 0;
   const occupancyColor = occupancyPct < 60 ? 'bg-green-500' : occupancyPct < 85 ? 'bg-yellow-500' : 'bg-red-500';
 
@@ -132,7 +135,7 @@ export default function AttendancePage() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100">
           <h3 className="font-semibold text-slate-800">Today's Attendance</h3>
-          <p className="text-xs text-slate-400 mt-0.5">{todayReport?.total ?? 0} check-ins today</p>
+          <p className="text-xs text-slate-400 mt-0.5">{attendanceTotal} check-ins today</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -146,7 +149,7 @@ export default function AttendancePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {todayReport?.data?.map((a: any) => (
+              {attendanceRows.map((a: any) => (
                 <tr key={a.id} className="hover:bg-slate-50">
                   <td className="px-5 py-3">
                     <p className="font-medium text-slate-800">{a.user?.firstName} {a.user?.lastName}</p>

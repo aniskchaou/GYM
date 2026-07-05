@@ -9,6 +9,32 @@ import toast from 'react-hot-toast';
 
 const EMPTY_TRAINER = { firstName: '', lastName: '', email: '', phone: '', password: '', bio: '', specialties: '' };
 
+function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean);
+      }
+    } catch {
+      // Fall back to comma-separated values when JSON parsing fails.
+    }
+
+    return trimmed.split(',').map((item) => item.trim()).filter(Boolean);
+  }
+
+  return [];
+}
+
 export default function TrainersPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(EMPTY_TRAINER);
@@ -112,7 +138,7 @@ export default function TrainersPage() {
           {trainers.map((t: any) => {
             const user = t.user ?? {};
             const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'Trainer';
-            const specialties: string[] = t.specialties ?? [];
+            const specialties = normalizeStringArray(t.specialties);
             return (
               <div key={t.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-4 mb-4">

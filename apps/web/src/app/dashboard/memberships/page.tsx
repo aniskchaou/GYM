@@ -20,6 +20,32 @@ const INTERVAL_LABEL: Record<string, string> = {
 const PLAN_TYPES = ['MONTHLY', 'ANNUAL', 'PAY_PER_VISIT', 'FAMILY', 'STUDENT', 'CORPORATE', 'DAY_PASS'];
 const EMPTY_PLAN = { name: '', description: '', type: 'MONTHLY', price: '', durationDays: '30', features: '' };
 
+function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean);
+      }
+    } catch {
+      // Fall back to comma-separated values when JSON parsing fails.
+    }
+
+    return trimmed.split(',').map((item) => item.trim()).filter(Boolean);
+  }
+
+  return [];
+}
+
 export default function MembershipsPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(EMPTY_PLAN);
@@ -134,35 +160,39 @@ export default function MembershipsPage() {
           </button>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {plans.map((plan: any) => (
-            <div key={plan.id} className={cn('bg-white rounded-2xl p-6 shadow-sm border transition-shadow hover:shadow-md', plan.isPopular ? 'border-indigo-300' : 'border-slate-100')}>
-              {plan.isPopular && (
-                <span className="text-xs font-bold bg-indigo-500 text-white px-2.5 py-1 rounded-full mb-3 inline-block">Most Popular</span>
-              )}
-              <h3 className="font-bold text-slate-800 text-lg">{plan.name}</h3>
-              {plan.description && <p className="text-slate-500 text-sm mt-1 mb-3">{plan.description}</p>}
-              <div className="mb-4">
-                <span className="text-3xl font-extrabold text-slate-900">{formatCurrency(plan.price)}</span>
-                <span className="text-slate-500 text-sm">{INTERVAL_LABEL[plan.interval] ?? '/mo'}</span>
+          {plans.map((plan: any) => {
+            const features = normalizeStringArray(plan.features);
+
+            return (
+              <div key={plan.id} className={cn('bg-white rounded-2xl p-6 shadow-sm border transition-shadow hover:shadow-md', plan.isPopular ? 'border-indigo-300' : 'border-slate-100')}>
+                {plan.isPopular && (
+                  <span className="text-xs font-bold bg-indigo-500 text-white px-2.5 py-1 rounded-full mb-3 inline-block">Most Popular</span>
+                )}
+                <h3 className="font-bold text-slate-800 text-lg">{plan.name}</h3>
+                {plan.description && <p className="text-slate-500 text-sm mt-1 mb-3">{plan.description}</p>}
+                <div className="mb-4">
+                  <span className="text-3xl font-extrabold text-slate-900">{formatCurrency(plan.price)}</span>
+                  <span className="text-slate-500 text-sm">{INTERVAL_LABEL[plan.interval] ?? '/mo'}</span>
+                </div>
+                {features.length > 0 && (
+                  <ul className="space-y-1.5 mb-4">
+                    {features.map((f, index) => (
+                      <li key={`${f}-${index}`} className="flex items-center gap-2 text-sm text-slate-600">
+                        <CheckCircle size={13} className="text-green-500 shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="flex items-center justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-50">
+                  <span className="flex items-center gap-1"><Users size={12} /> {plan._count?.memberships ?? 0} members</span>
+                  <span className={`px-2 py-0.5 rounded-full font-medium ${plan.isActive !== false ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'}`}>
+                    {plan.isActive !== false ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
               </div>
-              {plan.features?.length > 0 && (
-                <ul className="space-y-1.5 mb-4">
-                  {plan.features.map((f: string) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                      <CheckCircle size={13} className="text-green-500 shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="flex items-center justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-slate-50">
-                <span className="flex items-center gap-1"><Users size={12} /> {plan._count?.memberships ?? 0} members</span>
-                <span className={`px-2 py-0.5 rounded-full font-medium ${plan.isActive !== false ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'}`}>
-                  {plan.isActive !== false ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {plans.length === 0 && (
             <div className="col-span-3 bg-white rounded-2xl p-12 text-center shadow-sm border border-slate-100">
               <CreditCard size={40} className="mx-auto mb-3 text-slate-300" />

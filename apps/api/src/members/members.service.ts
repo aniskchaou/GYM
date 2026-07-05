@@ -6,6 +6,17 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 export class MembersService {
   constructor(private prisma: PrismaService) {}
 
+  private parseFitnessGoals(value: unknown) {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return value.split(',').map((goal) => goal.trim()).filter(Boolean);
+    }
+  }
+
   async findAll(gymId: string, query: any = {}) {
     const { search, status, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
@@ -13,10 +24,10 @@ export class MembersService {
     const where: any = { gymId, role: 'MEMBER' };
     if (search) {
       where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { memberProfile: { memberNumber: { contains: search, mode: 'insensitive' } } },
+        { firstName: { contains: search } },
+        { lastName: { contains: search } },
+        { email: { contains: search } },
+        { memberProfile: { memberNumber: { contains: search } } },
       ];
     }
 
@@ -92,7 +103,30 @@ export class MembersService {
     if (!profile) throw new NotFoundException('Member profile not found');
 
     return this.prisma.bodyMeasurement.create({
-      data: { memberId: profile.id, ...dto },
+      data: {
+        memberId: profile.id,
+        date: dto.date,
+        weightKg: dto.weightKg ?? dto.weight,
+        heightCm: dto.heightCm ?? dto.height,
+        bodyFatPct: dto.bodyFatPct ?? dto.bodyFat,
+        chestCm: dto.chestCm ?? dto.chest,
+        waistCm: dto.waistCm ?? dto.waist,
+        hipsCm: dto.hipsCm ?? dto.hips,
+        armCm: dto.armCm ?? dto.biceps,
+        thighCm: dto.thighCm ?? dto.thigh,
+        notes: dto.notes,
+      },
+    });
+  }
+
+  async getMyMeasurements(memberId: string) {
+    const profile = await this.prisma.memberProfile.findFirst({ where: { userId: memberId } });
+    if (!profile) throw new NotFoundException('Member profile not found');
+
+    return this.prisma.bodyMeasurement.findMany({
+      where: { memberId: profile.id },
+      orderBy: { date: 'desc' },
+      take: 20,
     });
   }
 
@@ -103,9 +137,11 @@ export class MembersService {
     });
     if (!profile) throw new NotFoundException('Member profile not found');
     return {
+      memberId: profile.userId,
       memberNumber: profile.memberNumber,
       qrCode: profile.qrCode,
       rfidTag: profile.rfidTag,
+      fitnessGoals: this.parseFitnessGoals(profile.fitnessGoals),
       name: `${profile.user.firstName} ${profile.user.lastName}`,
     };
   }

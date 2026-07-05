@@ -3,6 +3,48 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+const EXTRA_GYMS = [
+  {
+    name: 'Iron Forge Fitness',
+    slug: 'iron-forge-fitness',
+    city: 'Chicago',
+    country: 'US',
+    email: 'contact@ironforgefit.com',
+    ownerEmail: 'owner.ironforge@example.com',
+    ownerFirstName: 'Alex',
+    ownerLastName: 'Stone',
+    planTier: GymPlanTier.PROFESSIONAL,
+    maxMembers: 1000,
+    maxBranches: 5,
+  },
+  {
+    name: 'Pulse Studio Downtown',
+    slug: 'pulse-studio-downtown',
+    city: 'Miami',
+    country: 'US',
+    email: 'hello@pulsestudio.com',
+    ownerEmail: 'owner.pulse@example.com',
+    ownerFirstName: 'Maya',
+    ownerLastName: 'Reed',
+    planTier: GymPlanTier.STARTER,
+    maxMembers: 100,
+    maxBranches: 1,
+  },
+  {
+    name: 'Summit Strength Club',
+    slug: 'summit-strength-club',
+    city: 'Denver',
+    country: 'US',
+    email: 'admin@summitstrength.com',
+    ownerEmail: 'owner.summit@example.com',
+    ownerFirstName: 'Jordan',
+    ownerLastName: 'Blake',
+    planTier: GymPlanTier.ENTERPRISE,
+    maxMembers: 5000,
+    maxBranches: 20,
+  },
+];
+
 async function main() {
   console.log('🌱  Seeding GymFlow database...');
 
@@ -26,6 +68,55 @@ async function main() {
       maxBranches: 3,
     },
   });
+
+  // ── 1b. Extra gyms shown on discover page ─────────────────────────────
+  for (const g of EXTRA_GYMS) {
+    const seededGym = await prisma.gym.upsert({
+      where: { slug: g.slug },
+      update: {},
+      create: {
+        name: g.name,
+        slug: g.slug,
+        email: g.email,
+        city: g.city,
+        country: g.country,
+        timezone: 'America/Chicago',
+        currency: 'USD',
+        status: GymStatus.ACTIVE,
+        planTier: g.planTier,
+        maxMembers: g.maxMembers,
+        maxBranches: g.maxBranches,
+      },
+    });
+
+    const mainBranchId = `branch-${g.slug}`;
+    await prisma.branch.upsert({
+      where: { id: mainBranchId },
+      update: {},
+      create: {
+        id: mainBranchId,
+        gymId: seededGym.id,
+        name: 'Main Branch',
+        city: g.city,
+        capacity: 120,
+      },
+    });
+
+    await prisma.user.upsert({
+      where: { email: g.ownerEmail },
+      update: {},
+      create: {
+        gymId: seededGym.id,
+        branchId: mainBranchId,
+        role: UserRole.GYM_OWNER,
+        email: g.ownerEmail,
+        passwordHash: await hash('Owner@1234'),
+        firstName: g.ownerFirstName,
+        lastName: g.ownerLastName,
+        isEmailVerified: true,
+      },
+    });
+  }
 
   // ── 2. Create a branch ──────────────────────────────────────────────────
   const branch = await prisma.branch.upsert({

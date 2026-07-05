@@ -9,6 +9,45 @@ import {
 import api from '@/lib/api';
 import Link from 'next/link';
 
+const SAMPLE_CONTENT = [
+  {
+    id: 'sample-content-video-1',
+    title: 'Foundations of Strength Training',
+    category: 'Strength',
+    type: 'VIDEO',
+    visibility: 'MEMBERS_ONLY',
+    isPublished: true,
+    duration: 780,
+    viewCount: 34,
+    thumbnailUrl: '',
+    isSample: true,
+  },
+  {
+    id: 'sample-content-pdf-1',
+    title: '7-Day Mobility Reset Guide',
+    category: 'Mobility',
+    type: 'PDF',
+    visibility: 'PUBLIC',
+    isPublished: true,
+    duration: null,
+    viewCount: 21,
+    thumbnailUrl: '',
+    isSample: true,
+  },
+  {
+    id: 'sample-content-audio-1',
+    title: 'Post-Workout Recovery Breathwork',
+    category: 'Recovery',
+    type: 'AUDIO',
+    visibility: 'SUBSCRIBERS_ONLY',
+    isPublished: false,
+    duration: 420,
+    viewCount: 9,
+    thumbnailUrl: '',
+    isSample: true,
+  },
+];
+
 const TYPE_ICON: Record<string, any> = {
   VIDEO: Video,
   AUDIO: Music,
@@ -41,7 +80,7 @@ export default function TrainerContentPage() {
 
   const { data: items = [], isLoading } = useQuery<any[]>({
     queryKey: ['my-content'],
-    queryFn: () => api.get('/training-content/my').then((r) => r.data),
+    queryFn: () => api.get('/training-content/my').then((r) => r.data).catch(() => []),
   });
 
   const publishMut = useMutation({
@@ -59,13 +98,14 @@ export default function TrainerContentPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['my-content'] }),
   });
 
+  const seededItems = items.length > 0 ? items : SAMPLE_CONTENT;
   const types = ['ALL', 'VIDEO', 'AUDIO', 'PDF', 'LIVE_STREAM'];
-  const filtered = filter === 'ALL' ? items : items.filter((i) => i.type === filter);
+  const filtered = filter === 'ALL' ? seededItems : seededItems.filter((i) => i.type === filter);
   const stats = {
-    total: items.length,
-    published: items.filter((i) => i.isPublished).length,
-    views: items.reduce((s, i) => s + (i.viewCount ?? 0), 0),
-    videos: items.filter((i) => i.type === 'VIDEO').length,
+    total: seededItems.length,
+    published: seededItems.filter((i) => i.isPublished).length,
+    views: seededItems.reduce((s, i) => s + (i.viewCount ?? 0), 0),
+    videos: seededItems.filter((i) => i.type === 'VIDEO').length,
   };
 
   return (
@@ -186,14 +226,14 @@ export default function TrainerContentPage() {
                       <Edit2 size={13} /> Edit
                     </Link>
                     <button
-                      onClick={() => item.isPublished ? unpublishMut.mutate(item.id) : publishMut.mutate(item.id)}
+                      onClick={() => !item.isSample && (item.isPublished ? unpublishMut.mutate(item.id) : publishMut.mutate(item.id))}
                       className="flex items-center gap-1 text-xs text-slate-500 hover:text-green-600 transition-colors"
                     >
                       {item.isPublished ? <EyeOff size={13} /> : <Eye size={13} />}
                       {item.isPublished ? 'Unpublish' : 'Publish'}
                     </button>
                     <button
-                      onClick={() => confirm('Delete this content?') && deleteMut.mutate(item.id)}
+                      onClick={() => !item.isSample && confirm('Delete this content?') && deleteMut.mutate(item.id)}
                       className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-500 transition-colors ml-auto"
                     >
                       <Trash2 size={13} /> Delete

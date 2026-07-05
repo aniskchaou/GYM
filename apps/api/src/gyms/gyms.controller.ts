@@ -135,6 +135,24 @@ export class GymsController {
     return this.service.updateMyGym(gymId, dto);
   }
 
+  @Get('my/policies')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER)
+  @ApiOperation({ summary: 'Get my gym policies' })
+  myPolicies(@CurrentUser('gymId') gymId: string) {
+    return this.service.getMyPolicies(gymId);
+  }
+
+  @Patch('my/policies')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GYM_OWNER)
+  @ApiOperation({ summary: 'Update my gym policies' })
+  updateMyPolicies(@CurrentUser('gymId') gymId: string, @Body() dto: any) {
+    return this.service.updateMyPolicies(gymId, dto);
+  }
+
   // ─── Stripe Connect ──────────────────────────────────────────────────────
 
   @Get('my/stripe-connect/url')

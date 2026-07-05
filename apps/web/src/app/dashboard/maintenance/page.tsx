@@ -49,6 +49,12 @@ export default function MaintenancePage() {
     queryFn: () => api.get('/equipment').then(r => r.data ?? []),
   });
 
+  const normalizedEquipment = equipment.map((item) => ({
+    ...item,
+    serialNumber: item.serialNumber ?? (item as any).code,
+    isUnderMaintenance: item.isUnderMaintenance ?? item.status === 'MAINTENANCE',
+  }));
+
   const maintenanceMut = useMutation({
     mutationFn: ({ id, on }: { id: string; on: boolean }) =>
       api.post(`/equipment/${id}/maintenance`, { on }).then(r => r.data),
@@ -60,7 +66,7 @@ export default function MaintenancePage() {
   });
 
   const addLog = () => {
-    const eq = equipment.find(e => e.id === form.equipmentId);
+    const eq = normalizedEquipment.find(e => e.id === form.equipmentId);
     if (!eq) { toast.error('Select equipment'); return; }
     const log: MaintenanceLog = {
       id: `log-${Date.now()}`,
@@ -82,10 +88,10 @@ export default function MaintenancePage() {
     setLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
   };
 
-  const underMaintenance = equipment.filter(e => e.isUnderMaintenance);
-  const available        = equipment.filter(e => !e.isUnderMaintenance);
+  const underMaintenance = normalizedEquipment.filter(e => e.isUnderMaintenance);
+  const available        = normalizedEquipment.filter(e => !e.isUnderMaintenance);
 
-  const filteredEquipment = equipment.filter(e =>
+  const filteredEquipment = normalizedEquipment.filter(e =>
     !search || e.name.toLowerCase().includes(search.toLowerCase()) || (e.category ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
@@ -221,7 +227,7 @@ export default function MaintenancePage() {
                 <span className="text-xs font-medium text-slate-600">Equipment</span>
                 <select value={form.equipmentId} onChange={e => setForm(f => ({ ...f, equipmentId: e.target.value }))} className="mt-0.5 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
                   <option value="">— Select equipment —</option>
-                  {equipment.map(e => <option key={e.id} value={e.id}>{e.name}{e.category ? ` (${e.category})` : ''}</option>)}
+                  {normalizedEquipment.map(e => <option key={e.id} value={e.id}>{e.name}{e.category ? ` (${e.category})` : ''}</option>)}
                 </select>
               </label>
               <div className="grid grid-cols-2 gap-3">

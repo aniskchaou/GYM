@@ -21,6 +21,7 @@ const PLAN_MONTHLY_USD: Record<GymPlanTier, number> = {
 @Injectable()
 export class GymsService {
   private stripe: Stripe | null = null;
+  private policiesTableReady = false;
 
   constructor(
     private prisma: PrismaService,
@@ -201,6 +202,51 @@ export class GymsService {
     return this.prisma.gym.update({ where: { id: gymId }, data });
   }
 
+  private async ensurePoliciesTable() {
+    if (this.policiesTableReady) return;
+    await this.prisma.$executeRawUnsafe(
+      'CREATE TABLE IF NOT EXISTS "gym_policies" ("gymId" TEXT PRIMARY KEY, "payload" TEXT NOT NULL, "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)'
+    );
+    this.policiesTableReady = true;
+  }
+
+  async getMyPolicies(gymId: string) {
+    if (!gymId) throw new BadRequestException('No gym associated');
+    await this.ensurePoliciesTable();
+
+    const rows = await this.prisma.$queryRaw<Array<{ payload: string; updatedAt: string }>>`
+      SELECT "payload", "updatedAt"
+      FROM "gym_policies"
+      WHERE "gymId" = ${gymId}
+      LIMIT 1
+    `;
+
+    if (!rows.length) {
+      return { policies: null, updatedAt: null };
+    }
+
+    try {
+      return { policies: JSON.parse(rows[0].payload), updatedAt: rows[0].updatedAt };
+    } catch {
+      return { policies: null, updatedAt: rows[0].updatedAt };
+    }
+  }
+
+  async updateMyPolicies(gymId: string, dto: any) {
+    if (!gymId) throw new BadRequestException('No gym associated');
+    await this.ensurePoliciesTable();
+
+    const payload = JSON.stringify(dto ?? {});
+    await this.prisma.$executeRaw`
+      INSERT INTO "gym_policies" ("gymId", "payload", "updatedAt")
+      VALUES (${gymId}, ${payload}, CURRENT_TIMESTAMP)
+      ON CONFLICT("gymId")
+      DO UPDATE SET "payload" = EXCLUDED."payload", "updatedAt" = CURRENT_TIMESTAMP
+    `;
+
+    return this.getMyPolicies(gymId);
+  }
+
   // ─── Stripe Connect OAuth ─────────────────────────────────────────────────
 
   /** Generate the Stripe Connect OAuth authorisation URL */
@@ -360,14 +406,17 @@ export class GymsService {
     const page = opts.page ?? 1;
     const limit = Math.min(opts.limit ?? 12, 50);
     const skip = (page - 1) * limit;
+    const search = opts.search?.trim();
+    const city = opts.city?.trim();
 
     const where: any = { status: { in: ['ACTIVE', 'TRIAL'] } };
-    if (opts.search) where.OR = [
-      { name: { contains: opts.search, mode: 'insensitive' } },
-      { city: { contains: opts.search, mode: 'insensitive' } },
-      { description: { contains: opts.search, mode: 'insensitive' } },
+    if (search) where.OR = [
+      { name: { contains: search } },
+      { slug: { contains: search } },
+      { city: { contains: search } },
+      { description: { contains: search } },
     ];
-    if (opts.city) where.city = { contains: opts.city, mode: 'insensitive' };
+    if (city) where.city = { contains: city };
     if (opts.minRating) where.rating = { gte: opts.minRating };
 
     const [gyms, total] = await Promise.all([
@@ -483,7 +532,7 @@ export class GymsService {
           userId: user.id,
           memberNumber,
           qrCode,
-          fitnessGoals: [],
+          fitnessGoals: '[]',
         },
       });
 

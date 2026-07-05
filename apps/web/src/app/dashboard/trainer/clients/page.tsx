@@ -7,6 +7,31 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
+function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+      }
+    } catch {
+      return trimmed
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [];
+}
+
 export default function TrainerClientsPage() {
   const { data: clients = [], isLoading } = useQuery<any[]>({
     queryKey: ['trainer-clients'],
@@ -45,6 +70,7 @@ export default function TrainerClientsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {clients.map((m: any) => {
           const activeMembership = m.memberships?.[0];
+          const fitnessGoals = normalizeStringArray(m.memberProfile?.fitnessGoals);
           return (
             <div key={m.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
               {/* Header */}
@@ -64,11 +90,11 @@ export default function TrainerClientsPage() {
               </div>
 
               {/* Goals */}
-              {m.memberProfile?.fitnessGoals?.length > 0 && (
+              {fitnessGoals.length > 0 && (
                 <div>
                   <p className="text-xs text-slate-400 mb-1">Goals</p>
                   <div className="flex flex-wrap gap-1">
-                    {m.memberProfile.fitnessGoals.slice(0, 3).map((g: string) => (
+                    {fitnessGoals.slice(0, 3).map((g) => (
                       <span key={g} className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{g}</span>
                     ))}
                   </div>

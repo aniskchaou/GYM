@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InsightType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { randomUUID } from 'crypto';
 
 interface UserSignal {
   userId: string;
@@ -17,9 +18,21 @@ interface UserSignal {
 export class AiService {
   constructor(private prisma: PrismaService) {}
 
+  private get aiInsights() {
+    return ((this.prisma as any).aiInsight ?? (this.prisma as any).ai_insights) as any;
+  }
+
+  private get aiDietPlans() {
+    return ((this.prisma as any).aiDietPlan ?? (this.prisma as any).ai_diet_plans) as any;
+  }
+
+  private get loyaltyAccounts() {
+    return ((this.prisma as any).loyaltyAccount ?? (this.prisma as any).loyalty_accounts) as any;
+  }
+
   // ─── Member insights ───
   async listInsights(gymId: string, type?: InsightType) {
-    return this.prisma.aiInsight.findMany({
+    return this.aiInsights.findMany({
       where: { gymId, ...(type ? { type } : {}) },
       orderBy: { score: 'desc' },
       take: 200,
@@ -32,7 +45,7 @@ export class AiService {
     const created: any[] = [];
 
     // Clear prior insights for this gym (keep storage lean)
-    await this.prisma.aiInsight.deleteMany({ where: { gymId } });
+    await this.aiInsights.deleteMany({ where: { gymId } });
 
     for (const s of signals) {
       const churn = this.scoreChurn(s);
@@ -41,7 +54,7 @@ export class AiService {
 
       if (churn >= 60) {
         created.push(
-          await this.prisma.aiInsight.create({
+          await this.aiInsights.create({
             data: {
               gymId,
               userId: s.userId,
@@ -55,7 +68,7 @@ export class AiService {
       }
       if (upgrade >= 60) {
         created.push(
-          await this.prisma.aiInsight.create({
+          await this.aiInsights.create({
             data: {
               gymId,
               userId: s.userId,
@@ -69,7 +82,7 @@ export class AiService {
       }
       if (engagement >= 70) {
         created.push(
-          await this.prisma.aiInsight.create({
+          await this.aiInsights.create({
             data: {
               gymId,
               userId: s.userId,
@@ -83,7 +96,7 @@ export class AiService {
       }
       if (!s.hasActiveMembership && s.attendances30d === 0) {
         created.push(
-          await this.prisma.aiInsight.create({
+          await this.aiInsights.create({
             data: {
               gymId,
               userId: s.userId,
@@ -127,7 +140,7 @@ export class AiService {
             this.prisma.membership.findFirst({
               where: { memberId: m.id, status: 'ACTIVE' },
             }),
-            this.prisma.loyaltyAccount.findUnique({ where: { userId: m.id } }),
+            this.loyaltyAccounts.findUnique({ where: { userId: m.id } }),
           ]);
 
         const days = lastAttendance
@@ -225,25 +238,50 @@ export class AiService {
       ],
     };
 
-    return this.prisma.aiDietPlan.create({
+    const created = await this.aiDietPlans.create({
       data: {
+        id: randomUUID(),
         userId,
         goal: dto.goal,
         calories,
         proteinG,
         carbsG,
         fatG,
-        allergies: dto.allergies ?? [],
-        plan: plan as any,
+        allergies: JSON.stringify(dto.allergies ?? []),
+        plan: JSON.stringify(plan),
       },
     });
+
+    return {
+      ...created,
+      title: plan.summary,
+      days: [],
+      plan,
+    };
   }
 
-  myDietPlans(userId: string) {
-    return this.prisma.aiDietPlan.findMany({
+  async myDietPlans(userId: string) {
+    const plans = await this.aiDietPlans.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: 20,
+    });
+
+    return plans.map((entry: any) => {
+      let parsedPlan: any = null;
+      try {
+        parsedPlan = typeof entry.plan === 'string' ? JSON.parse(entry.plan) : entry.plan;
+      } catch {
+        parsedPlan = null;
+      }
+
+      return {
+        ...entry,
+        allergies: typeof entry.allergies === 'string' ? JSON.parse(entry.allergies || '[]') : entry.allergies,
+        title: parsedPlan?.summary ?? `${entry.goal} plan`,
+        days: parsedPlan?.days ?? [],
+        plan: parsedPlan,
+      };
     });
   }
 }

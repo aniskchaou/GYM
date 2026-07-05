@@ -38,7 +38,10 @@ function DiscoverPageInner() {
   const [minRating, setMinRating] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+  const apiBaseRaw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API = apiBaseRaw.endsWith('/api/v1')
+    ? apiBaseRaw
+    : `${apiBaseRaw.replace(/\/$/, '')}/api/v1`;
 
   const fetchGyms = async (p = 1) => {
     setLoading(true);
@@ -80,22 +83,7 @@ function DiscoverPageInner() {
       {/* Header */}
       <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Dumbbell className="w-6 h-6" />
-              </div>
-              <span className="text-xl font-bold">GymFlow</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/auth/login" className="text-white/80 hover:text-white text-sm">Sign in</Link>
-              <Link href="/auth/register" className="bg-white text-indigo-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50">
-                Join a gym
-              </Link>
-            </div>
-          </div>
-
-          <div className="max-w-2xl mx-auto text-center mb-8">
+          <div className="max-w-2xl mx-auto text-center mb-8 pt-4">
             <h1 className="text-3xl font-bold mb-3">Find your perfect gym</h1>
             <p className="text-indigo-200">Discover gyms near you, compare memberships, and join online</p>
           </div>
@@ -145,7 +133,11 @@ function DiscoverPageInner() {
       </div>
 
       {/* Results */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div id="trending-this-week" className="max-w-7xl mx-auto px-4 py-8 scroll-mt-32">
+        <div className="mb-4">
+          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">Trending this week</span>
+          <h2 className="text-2xl font-bold text-gray-900 mt-1">Discover gyms people are joining now</h2>
+        </div>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <p className="text-gray-600">

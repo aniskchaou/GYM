@@ -10,6 +10,18 @@ import { cn } from '@/lib/utils';
 
 const EMPTY = { weight: '', bodyFat: '', waist: '', chest: '', biceps: '', notes: '' };
 
+function normalizeMeasurement(entry: any) {
+  if (!entry) return null;
+  return {
+    ...entry,
+    weight: entry.weight ?? entry.weightKg ?? null,
+    bodyFat: entry.bodyFat ?? entry.bodyFatPct ?? null,
+    waist: entry.waist ?? entry.waistCm ?? null,
+    chest: entry.chest ?? entry.chestCm ?? null,
+    biceps: entry.biceps ?? entry.armCm ?? null,
+  };
+}
+
 function StatCard({ label, value, unit, prev, color }: { label: string; value?: number | null; unit: string; prev?: number | null; color: string }) {
   const diff = value && prev ? +(value - prev).toFixed(1) : null;
   return (
@@ -36,15 +48,14 @@ export default function MemberProgressPage() {
     queryFn: () => api.get('/members/me/card').then(r => r.data),
   });
 
-  // Get body measurements from member profile
   const { data: measurements = [], isLoading } = useQuery<any[]>({
     queryKey: ['my-measurements'],
-    queryFn: () => api.get(`/members/${profile?.memberId ?? user?.id}/measurements`).then(r => r.data).catch(() => []),
-    enabled: !!profile || !!user?.id,
+    queryFn: () => api.get('/members/me/measurements').then(r => r.data).catch(() => []),
+    enabled: !!user?.id,
   });
 
   const logMut = useMutation({
-    mutationFn: (dto: any) => api.post(`/members/${user?.id}/measurements`, {
+    mutationFn: (dto: any) => api.post('/members/me/measurements', {
       weight:  dto.weight  ? parseFloat(dto.weight)  : undefined,
       bodyFat: dto.bodyFat ? parseFloat(dto.bodyFat) : undefined,
       waist:   dto.waist   ? parseFloat(dto.waist)   : undefined,
@@ -61,9 +72,10 @@ export default function MemberProgressPage() {
     onError: (e: any) => toast.error(e.response?.data?.message || 'Failed'),
   });
 
-  const latest  = measurements[0];
-  const previous = measurements[1];
-  const goals = profile?.memberProfile?.fitnessGoals ?? [];
+  const normalizedMeasurements = measurements.map(normalizeMeasurement).filter(Boolean);
+  const latest = normalizedMeasurements[0];
+  const previous = normalizedMeasurements[1];
+  const goals = Array.isArray(profile?.fitnessGoals) ? profile.fitnessGoals : [];
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -82,7 +94,7 @@ export default function MemberProgressPage() {
         <StatCard label="Weight"   value={latest?.weight}  unit=" kg" prev={previous?.weight}  color="bg-blue-500" />
         <StatCard label="Body Fat" value={latest?.bodyFat} unit="%"   prev={previous?.bodyFat} color="bg-amber-500" />
         <StatCard label="Waist"    value={latest?.waist}   unit=" cm" prev={previous?.waist}   color="bg-indigo-500" />
-        <StatCard label="Measurements logged" value={measurements.length} unit="" color="bg-green-500" />
+        <StatCard label="Measurements logged" value={normalizedMeasurements.length} unit="" color="bg-green-500" />
       </div>
 
       {/* Goals */}
@@ -101,11 +113,11 @@ export default function MemberProgressPage() {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="font-semibold text-slate-800">Measurement History</h2>
-          <span className="text-xs text-slate-400">{measurements.length} entries</span>
+          <span className="text-xs text-slate-400">{normalizedMeasurements.length} entries</span>
         </div>
         {isLoading ? (
           <p className="text-center text-slate-500 py-8">Loading…</p>
-        ) : measurements.length === 0 ? (
+        ) : normalizedMeasurements.length === 0 ? (
           <div className="p-10 text-center text-slate-400">
             <Scale size={32} className="mx-auto mb-2 opacity-30" />
             <p className="text-sm">No measurements yet. Click "Log Measurement" to start tracking.</p>
@@ -116,7 +128,7 @@ export default function MemberProgressPage() {
               <tr>{['Date', 'Weight', 'Body Fat', 'Waist', 'Chest', 'Biceps', 'Notes'].map(h => <th key={h} className="text-left px-4 py-3">{h}</th>)}</tr>
             </thead>
             <tbody>
-              {measurements.map((m: any, i: number) => (
+              {normalizedMeasurements.map((m: any, i: number) => (
                 <tr key={m.id ?? i} className="border-t border-slate-100 hover:bg-slate-50/50">
                   <td className="px-4 py-3 text-slate-600">{m.date ? new Date(m.date).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-3 font-medium text-slate-800">{m.weight ? `${m.weight} kg` : '—'}</td>

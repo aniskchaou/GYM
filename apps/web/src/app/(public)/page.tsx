@@ -520,21 +520,21 @@ export default async function HomePage() {
               <h2 className="text-2xl font-bold text-slate-900">Hot gyms right now</h2>
               <p className="text-slate-500 text-sm mt-1">Based on new sign-ups and member reviews in the last 7 days</p>
             </div>
-            <Link href="/discover" className="hidden sm:flex items-center gap-1 text-indigo-600 font-semibold text-sm hover:underline">
+            <Link href="/discover#trending-this-week" className="hidden sm:flex items-center gap-1 text-indigo-600 font-semibold text-sm hover:underline">
               See all <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { rank: 1, name: 'PeakFit Studio', city: 'New York', tag: '🔥 +142 new members', badge: 'bg-rose-500', price: '$45', specialty: 'HIIT & Cardio' },
-              { rank: 2, name: 'Zen Wellness Hub', city: 'Los Angeles', tag: '⭐ 4.9 this week', badge: 'bg-amber-500', price: '$55', specialty: 'Yoga & Pilates' },
-              { rank: 3, name: 'CrossCore Gym', city: 'Chicago', tag: '📈 Fastest growing', badge: 'bg-indigo-500', price: '$39', specialty: 'CrossFit' },
-              { rank: 4, name: 'AquaFlex Center', city: 'Miami', tag: '💬 Most reviewed', badge: 'bg-emerald-500', price: '$49', specialty: 'Swimming & Spa' },
-            ].map(({ rank, name, city, tag, badge, price, specialty }) => (
+              { rank: 1, name: 'Demo Fitness Center', slug: 'demo-gym', city: 'Brussels', tag: '🔥 Trending now', badge: 'bg-rose-500', price: '$9.99', specialty: 'Day Pass & Classes' },
+              { rank: 2, name: 'Iron Forge Fitness', slug: 'iron-forge-fitness', city: 'Chicago', tag: '⭐ Member favorite', badge: 'bg-amber-500', price: '$39', specialty: 'Strength & Conditioning' },
+              { rank: 3, name: 'Pulse Studio Downtown', slug: 'pulse-studio-downtown', city: 'Miami', tag: '📈 Fastest growing', badge: 'bg-indigo-500', price: '$49', specialty: 'HIIT & Group Fitness' },
+              { rank: 4, name: 'Summit Strength Club', slug: 'summit-strength-club', city: 'Denver', tag: '💬 Most reviewed', badge: 'bg-emerald-500', price: '$55', specialty: 'Performance Training' },
+            ].map(({ rank, name, slug, city, tag, badge, price, specialty }) => (
               <Link
                 key={name}
-                href="/discover"
+                href={`/gyms/${slug}`}
                 className="group relative bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-lg transition-all overflow-hidden"
               >
                 <div className="h-28 bg-gradient-to-br from-slate-700 to-slate-500 flex items-center justify-center">

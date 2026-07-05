@@ -56,6 +56,56 @@ export class PaymentsController {
     return this.service.collectManualPayment(gymId, staffId, dto);
   }
 
+  @Post('stripe/checkout')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.RECEPTIONIST)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create Stripe Checkout session for member payment' })
+  createStripeCheckout(
+    @CurrentUser('gymId') gymId: string,
+    @CurrentUser('id') staffId: string,
+    @Body() dto: { memberId: string; amount: number; currency?: string; description?: string; membershipId?: string; successUrl?: string; cancelUrl?: string },
+  ) {
+    return this.service.createStripeCheckout(gymId, staffId, dto);
+  }
+
+  @Post('stripe/complete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.RECEPTIONIST)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Finalize Stripe Checkout session after redirect' })
+  completeStripeCheckout(
+    @CurrentUser('gymId') gymId: string,
+    @Body() dto: { sessionId: string; paymentId: string },
+  ) {
+    return this.service.completeStripeCheckout(gymId, dto);
+  }
+
+  @Post('paypal/create-order')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.RECEPTIONIST)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create PayPal order for member payment' })
+  createPayPalOrder(
+    @CurrentUser('gymId') gymId: string,
+    @CurrentUser('id') staffId: string,
+    @Body() dto: { memberId: string; amount: number; currency?: string; description?: string; membershipId?: string; returnUrl?: string; cancelUrl?: string },
+  ) {
+    return this.service.createPayPalOrder(gymId, staffId, dto);
+  }
+
+  @Post('paypal/capture-order')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GYM_OWNER, UserRole.BRANCH_MANAGER, UserRole.RECEPTIONIST)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Capture approved PayPal order' })
+  capturePayPalOrder(
+    @CurrentUser('gymId') gymId: string,
+    @Body() dto: { paymentId: string; orderId: string },
+  ) {
+    return this.service.capturePayPalOrder(gymId, dto);
+  }
+
   @Post(':id/refund')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.GYM_OWNER, UserRole.SUPER_ADMIN)

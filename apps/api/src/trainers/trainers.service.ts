@@ -108,9 +108,9 @@ export class TrainersService {
       updates.push(this.prisma.bodyMeasurement.create({
         data: {
           memberId: profile.id,
-          weight: dto.weight,
-          height: dto.height,
-          bodyFat: dto.bodyFat,
+          weightKg: dto.weight,
+          heightCm: dto.height,
+          bodyFatPct: dto.bodyFat,
           notes: `Assessment by trainer. Level: ${dto.fitnessLevel}. ${dto.notes}`,
         },
       }));

@@ -39,8 +39,6 @@ model Gym {
   rating                 Float                  @default(0)
   reviewCount            Int                    @default(0)
   platformCommissionRate Float                  @default(20)
-  reviewcount            Int                    @default(0)
-  platformcommissionrate Float                  @default(20)
   access_logs            access_logs[]
   activities             activities[]
   ai_insights            ai_insights[]

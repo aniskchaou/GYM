@@ -11,6 +11,7 @@ export class AttendanceService {
     qrCode?: string;
     rfidTag?: string;
     query?: string; // name, email, or member number search
+    gymId?: string;
     branchId: string;
     method: AttendanceMethod;
   }) {
@@ -32,6 +33,9 @@ export class AttendanceService {
     // Resolve by free-text query (name or email)
     if (!userId && dto.query) {
       const q = dto.query.trim();
+      const nameParts = q.split(/\s+/).filter(Boolean);
+      const firstNameTerm = nameParts[0];
+      const lastNameTerm = nameParts.length > 1 ? nameParts[nameParts.length - 1] : undefined;
       // Try QR/member number first
       const byQr = await this.prisma.memberProfile.findFirst({
         where: { OR: [{ qrCode: q }, { memberNumber: q }] },
@@ -42,10 +46,28 @@ export class AttendanceService {
         // Search by email or name
         const user = await this.prisma.user.findFirst({
           where: {
+            gymId: dto.gymId,
+            role: 'MEMBER',
             OR: [
-              { email: { equals: q, mode: 'insensitive' } },
-              { firstName: { contains: q, mode: 'insensitive' } },
-              { lastName: { contains: q, mode: 'insensitive' } },
+              { email: { equals: q } },
+              { firstName: { contains: q } },
+              { lastName: { contains: q } },
+              ...(lastNameTerm
+                ? [
+                    {
+                      AND: [
+                        { firstName: { contains: firstNameTerm } },
+                        { lastName: { contains: lastNameTerm } },
+                      ],
+                    },
+                    {
+                      AND: [
+                        { firstName: { contains: lastNameTerm } },
+                        { lastName: { contains: firstNameTerm } },
+                      ],
+                    },
+                  ]
+                : []),
             ],
           },
         });
@@ -104,10 +126,14 @@ export class AttendanceService {
   }
 
   async getAttendanceReport(gymId: string, from: Date, to: Date) {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    toDate.setHours(23, 59, 59, 999);
+
     return this.prisma.attendance.findMany({
       where: {
         branch: { gymId },
-        checkedInAt: { gte: from, lte: to },
+        checkedInAt: { gte: fromDate, lte: toDate },
       },
       include: {
         user: { select: { firstName: true, lastName: true } },

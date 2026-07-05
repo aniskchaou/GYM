@@ -23,6 +23,13 @@ import { WorkoutsModule } from './workouts/workouts.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { TrainingContentModule } from './training-content/training-content.module';
+import { EventsModule } from './events/events.module';
+import { AccessModule } from './access/access.module';
+import { EquipmentModule } from './equipment/equipment.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { PosModule } from './pos/pos.module';
+import { PtSessionsModule } from './pt-sessions/pt-sessions.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -42,6 +49,7 @@ import { TrainingContentModule } from './training-content/training-content.modul
 
     // Core
     PrismaModule,
+    EventsModule,
 
     // Feature modules
     AuthModule,
@@ -62,6 +70,12 @@ import { TrainingContentModule } from './training-content/training-content.modul
     UploadsModule,
     DashboardModule,
     TrainingContentModule,
+    AccessModule,
+    EquipmentModule,
+    InventoryModule,
+    PosModule,
+    PtSessionsModule,
+    AiModule,
   ],
 })
 export class AppModule {}

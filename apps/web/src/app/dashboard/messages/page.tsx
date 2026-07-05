@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
@@ -18,6 +18,12 @@ interface Message {
   memberId?: string;
 }
 
+const SEEDED_MESSAGES: Message[] = [
+  { id: 'seed-msg-1', from: 'me', text: 'Great work on your last session. Keep your tempo controlled on squats this week.', time: '09:15', memberName: 'Alex Carter', memberId: 'user-member-alex' },
+  { id: 'seed-msg-2', from: 'me', text: 'Mobility first, then move into your interval work. We will reassess next Monday.', time: '10:40', memberName: 'Nina Lopez', memberId: 'user-member-nina' },
+  { id: 'seed-msg-3', from: 'me', text: 'Focus on recovery today. Hydrate and repeat the breathing drill from class.', time: '11:05', memberName: 'Charlie Stone', memberId: 'user-member-charlie' },
+];
+
 export default function MessagesPage() {
   const params   = useSearchParams();
   const { user } = useAuthStore();
@@ -32,6 +38,14 @@ export default function MessagesPage() {
     queryFn: () => api.get('/trainers/my/clients').then(r => r.data),
     enabled: user?.role === 'TRAINER',
   });
+
+  useEffect(() => {
+    if (user?.role === 'TRAINER' && !selectedMember && clients.length > 0) {
+      const seededMemberIds = new Set(SEEDED_MESSAGES.map((message) => message.memberId));
+      const defaultClient = clients.find((client: any) => seededMemberIds.has(client.id)) ?? clients[0];
+      setSelectedMember(defaultClient.id);
+    }
+  }, [clients, selectedMember, user?.role]);
 
   // For members - show their trainer's messages via notifications
   const { data: notifications = [] } = useQuery<any[]>({
@@ -65,7 +79,8 @@ export default function MessagesPage() {
   };
 
   const selectedClient = clients.find(c => c.id === selectedMember);
-  const threadMessages = messages.filter(m => m.memberId === selectedMember);
+  const availableMessages = messages.length > 0 ? messages : SEEDED_MESSAGES;
+  const threadMessages = availableMessages.filter(m => m.memberId === selectedMember);
 
   const trainerNotifications = notifications.filter((n: any) =>
     n.title === 'Message from your trainer'

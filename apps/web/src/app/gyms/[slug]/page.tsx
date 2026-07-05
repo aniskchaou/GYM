@@ -27,6 +27,25 @@ interface GymProfile {
   }[];
 }
 
+function parseStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string');
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string');
+      }
+    } catch {
+      return value.trim() ? [value] : [];
+    }
+  }
+
+  return [];
+}
+
 const SECTIONS = [
   { id: 'overview',  label: 'Overview'  },
   { id: 'pricing',   label: 'Pricing'   },
@@ -41,14 +60,45 @@ export default function GymProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('overview');
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+  const apiBaseRaw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API = apiBaseRaw.endsWith('/api/v1')
+    ? apiBaseRaw
+    : `${apiBaseRaw.replace(/\/$/, '')}/api/v1`;
 
   useEffect(() => {
     fetch(`${API}/gyms/profile/${slug}`)
       .then(r => r.json())
-      .then(data => { setGym(data); setLoading(false); })
+      .then(data => {
+        const normalized: GymProfile = {
+          ...data,
+          _count: data?._count ?? {
+            users: Array.isArray(data?.users) ? data.users.length : 0,
+            branches: Array.isArray(data?.branches) ? data.branches.length : 0,
+          },
+          users: Array.isArray(data?.users)
+            ? data.users.map((user: GymProfile['users'][number]) => ({
+                ...user,
+                trainerProfile: user?.trainerProfile
+                  ? {
+                      ...user.trainerProfile,
+                      specialties: parseStringArray(user.trainerProfile.specialties),
+                    }
+                  : null,
+              }))
+            : [],
+          branches: Array.isArray(data?.branches) ? data.branches : [],
+          membershipPlans: Array.isArray(data?.membershipPlans)
+            ? data.membershipPlans.map((plan: GymProfile['membershipPlans'][number]) => ({
+                ...plan,
+                features: parseStringArray(plan.features),
+              }))
+            : [],
+        };
+        setGym(normalized);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
-  }, [slug]);
+  }, [slug, API]);
 
   useEffect(() => {
     if (!gym) return;
@@ -81,7 +131,7 @@ export default function GymProfilePage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* GYM STICKY NAVBAR */}
-      <nav className="sticky top-16 z-40 bg-white border-b border-gray-100 shadow-sm">
+      <nav className="sticky top-[100px] z-40 bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-14">
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/discover" className="text-gray-400 hover:text-gray-700 shrink-0">

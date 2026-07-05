@@ -2,10 +2,14 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationChannel, NotificationStatus, UserRole } from '@prisma/client';
 import { SendNotificationDto } from './dto/send-notification.dto';
+import { MailService } from '../common/mail.service';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mail: MailService,
+  ) {}
 
   async listForUser(userId: string) {
     const items = await this.prisma.notification.findMany({
@@ -57,6 +61,7 @@ export class NotificationsService {
 
   async send(gymId: string, dto: SendNotificationDto) {
     let recipientIds: string[] = dto.userIds ?? [];
+    let recipientEmails: string[] = [];
 
     if (!recipientIds.length) {
       const audience = dto.audience ?? 'members';
@@ -69,9 +74,16 @@ export class NotificationsService {
 
       const recipients = await this.prisma.user.findMany({
         where: { gymId, ...(roleFilter ? { role: roleFilter } : {}) },
-        select: { id: true },
+        select: { id: true, email: true },
       });
       recipientIds = recipients.map((u) => u.id);
+      recipientEmails = recipients.map((u) => u.email).filter(Boolean);
+    } else {
+      const recipients = await this.prisma.user.findMany({
+        where: { id: { in: recipientIds }, gymId },
+        select: { email: true },
+      });
+      recipientEmails = recipients.map((u) => u.email).filter(Boolean);
     }
 
     if (!recipientIds.length) return { sent: 0 };
@@ -88,6 +100,18 @@ export class NotificationsService {
       })),
     });
 
-    return { sent: recipientIds.length };
+    let emailResult: { sent: number; failed: number } | undefined;
+    if ((dto.channel ?? NotificationChannel.IN_APP) === NotificationChannel.EMAIL && recipientEmails.length) {
+      emailResult = await this.mail.sendBulk(
+        recipientEmails.map((to) => ({
+          to,
+          subject: dto.subject,
+          text: dto.body,
+          html: `<p>${dto.body}</p>`,
+        })),
+      );
+    }
+
+    return { sent: recipientIds.length, email: emailResult };
   }
 }

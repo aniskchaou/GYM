@@ -3,13 +3,14 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { Toaster } from 'react-hot-toast';
+import FloatingChatButton from '@/components/public/FloatingChatButton';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: { default: 'GymFlow', template: '%s | GymFlow' },
   description: 'Professional Gym Management SaaS Platform',
-  icons: { icon: '/favicon.ico' },
+  icons: { icon: '/icon.svg' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} font-sans`}>
         <Providers>
           {children}
+          <FloatingChatButton />
           <Toaster
             position="top-right"
             toastOptions={{

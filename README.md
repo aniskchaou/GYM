@@ -149,6 +149,37 @@ npm run dev
 - **API**: http://localhost:4000
 - **Prisma Studio**: `npm run db:studio`
 
+## One-Click Launcher
+
+A local GUI launcher is available for setup and daily development flow.
+
+1. Start launcher:
+
+```bash
+npm run launcher
+```
+
+2. Open:
+
+- http://127.0.0.1:3030
+
+From the launcher you can:
+
+- Follow a 4-step wizard flow (check environment, configure database, install/bootstrap, run/stop)
+- Save database connection values to `apps/api/.env` and `packages/database/.env`
+- Install dependencies and run `db:generate`, `db:migrate`, `db:seed`
+- Start/stop Turbo dev, API-only, or Web-only services
+- Monitor live logs in one place
+
+Database engine note:
+
+- The launcher UI shows SQLite/PostgreSQL/MySQL cards for guided setup parity with premium docs style.
+- Current GymFlow Prisma schema is PostgreSQL-only, so PostgreSQL is the supported runtime engine.
+
+Windows quick launch:
+
+- Double-click `launcher.bat`
+
 ---
 
 ## Development Phases

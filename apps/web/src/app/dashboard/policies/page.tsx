@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck, Save, Check } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
 type CheckKeys = 'guest' | 'children' | 'allDay' | 'qr' | 'freeze' | 'guestPass' | 'contractRequired';
@@ -28,6 +30,7 @@ const POLICY_TEXTS: { key: string; label: string; default: string }[] = [
 ];
 
 export default function PoliciesPage() {
+  const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [checks, setChecks] = useState<Record<CheckKeys, boolean>>({
     guest: false, children: true, allDay: false, qr: true, freeze: true,
@@ -38,10 +41,42 @@ export default function PoliciesPage() {
     Object.fromEntries(POLICY_TEXTS.map(p => [p.key, p.default]))
   );
 
+  const { data: policyResponse, isLoading } = useQuery({
+    queryKey: ['gym-policies'],
+    queryFn: () => api.get('/gyms/my/policies').then((r) => r.data),
+  });
+
+  useEffect(() => {
+    const payload = policyResponse?.policies;
+    if (!payload) return;
+
+    if (payload.checks && typeof payload.checks === 'object') {
+      setChecks((prev) => ({ ...prev, ...payload.checks }));
+    }
+    if (payload.booking && typeof payload.booking === 'object') {
+      setBooking((prev) => ({ ...prev, ...payload.booking }));
+    }
+    if (payload.texts && typeof payload.texts === 'object') {
+      setTexts((prev) => ({ ...prev, ...payload.texts }));
+    }
+  }, [policyResponse]);
+
+  const saveMutation = useMutation({
+    mutationFn: (payload: { checks: Record<CheckKeys, boolean>; booking: Record<BookingKeys, number>; texts: Record<string, string> }) =>
+      api.patch('/gyms/my/policies', payload).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gym-policies'] });
+      setSaved(true);
+      toast.success('Policies saved successfully');
+      setTimeout(() => setSaved(false), 2500);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message ?? 'Failed to save policies');
+    },
+  });
+
   const handleSave = () => {
-    setSaved(true);
-    toast.success('Policies saved successfully');
-    setTimeout(() => setSaved(false), 2500);
+    saveMutation.mutate({ checks, booking, texts });
   };
 
   return (
@@ -51,10 +86,23 @@ export default function PoliciesPage() {
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2"><ShieldCheck size={22} /> Gym Policies</h1>
           <p className="text-sm text-slate-500 mt-0.5">Set access rules, booking limits, and define your policy text</p>
         </div>
-        <button onClick={handleSave} className={cn('flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors', saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700')}>
-          {saved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> Save Policies</>}
+        <button
+          onClick={handleSave}
+          disabled={isLoading || saveMutation.isPending}
+          className={cn(
+            'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
+            saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+          )}
+        >
+          {saved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> {saveMutation.isPending ? 'Saving...' : 'Save Policies'}</>}
         </button>
       </div>
+
+      {isLoading && (
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+          Loading saved policy settings...
+        </div>
+      )}
 
       {/* Access control */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">

@@ -18,10 +18,64 @@ const TYPE_COLOR: Record<string, string> = {
   LIVE_STREAM: 'bg-red-100 text-red-700',
 };
 
+const SEEDED_MEMBER_CONTENT = [
+  {
+    id: 'member-content-live-1',
+    title: 'Saturday Mobility Flow Live',
+    category: 'Recovery',
+    type: 'LIVE_STREAM',
+    trainer: { firstName: 'Mike', lastName: 'Fit' },
+    liveStreamAt: '2026-07-07T12:30:00.000Z',
+    liveStreamUrl: 'https://example.com/live/mobility-flow',
+    viewCount: 18,
+    isSample: true,
+  },
+  {
+    id: 'member-content-video-1',
+    title: 'Upper Body Technique Reset',
+    category: 'Strength',
+    type: 'VIDEO',
+    trainer: { firstName: 'Mike', lastName: 'Fit' },
+    duration: 840,
+    thumbnailUrl: '',
+    fileUrl: 'https://example.com/content/upper-body-technique',
+    viewCount: 41,
+    isSample: true,
+  },
+  {
+    id: 'member-content-audio-1',
+    title: '5-Minute Guided Cooldown',
+    category: 'Recovery',
+    type: 'AUDIO',
+    trainer: { firstName: 'Mike', lastName: 'Fit' },
+    duration: 300,
+    fileUrl: 'https://example.com/content/guided-cooldown',
+    viewCount: 29,
+    isSample: true,
+  },
+  {
+    id: 'member-content-pdf-1',
+    title: 'Smart Grocery List for Training Weeks',
+    category: 'Nutrition',
+    type: 'PDF',
+    trainer: { firstName: 'Mike', lastName: 'Fit' },
+    fileUrl: 'https://example.com/content/grocery-list.pdf',
+    viewCount: 22,
+    isSample: true,
+  },
+];
+
 function fmtDuration(sec?: number | null) {
   if (!sec) return null;
   const m = Math.floor(sec / 60), s = sec % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function fmtLiveStreamDate(iso?: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
 }
 
 export default function MemberContentPage() {
@@ -37,13 +91,13 @@ export default function MemberContentPage() {
       if (typeFilter !== 'ALL') params.type = typeFilter;
       if (category) params.category = category;
       if (search) params.search = search;
-      return api.get('/training-content', { params }).then((r) => r.data);
+      return api.get('/training-content', { params }).then((r) => r.data).catch(() => []);
     },
   });
 
   const { data: categories = [] } = useQuery<string[]>({
     queryKey: ['content-categories'],
-    queryFn: () => api.get('/training-content/categories').then((r) => r.data),
+    queryFn: () => api.get('/training-content/categories').then((r) => r.data).catch(() => []),
   });
 
   const viewMut = useMutation({
@@ -53,15 +107,19 @@ export default function MemberContentPage() {
 
   function openContent(item: any) {
     setActiveId(item.id);
-    viewMut.mutate({ id: item.id, progress: 0 });
+    if (!item.isSample) {
+      viewMut.mutate({ id: item.id, progress: 0 });
+    }
   }
 
-  const activeItem = items.find((i) => i.id === activeId);
+  const contentItems = items.length > 0 ? items : SEEDED_MEMBER_CONTENT;
+  const categoryOptions = categories.length > 0 ? categories : Array.from(new Set(SEEDED_MEMBER_CONTENT.map((item) => item.category).filter(Boolean)));
+  const activeItem = contentItems.find((i) => i.id === activeId);
   const TYPES = ['ALL', 'VIDEO', 'AUDIO', 'PDF', 'LIVE_STREAM'];
 
   // Group items by category for display
-  const featured = items.filter((i) => i.type === 'LIVE_STREAM');
-  const rest = items.filter((i) => i.type !== 'LIVE_STREAM');
+  const featured = contentItems.filter((i) => i.type === 'LIVE_STREAM');
+  const rest = contentItems.filter((i) => i.type !== 'LIVE_STREAM');
 
   return (
     <div className="space-y-6">
@@ -86,7 +144,7 @@ export default function MemberContentPage() {
           className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-600 focus:outline-none focus:border-indigo-400 bg-white"
         >
           <option value="">All categories</option>
-          {categories.map((c) => <option key={c}>{c}</option>)}
+          {categoryOptions.map((c) => <option key={c}>{c}</option>)}
         </select>
       </div>
 
@@ -122,13 +180,17 @@ export default function MemberContentPage() {
                   <p className="font-semibold text-sm">{item.title}</p>
                   <p className="text-red-200 text-xs mt-0.5">
                     {item.trainer?.firstName} {item.trainer?.lastName}
-                    {item.liveStreamAt && ` · ${new Date(item.liveStreamAt).toLocaleString()}`}
+                    {fmtLiveStreamDate(item.liveStreamAt) && ` · ${fmtLiveStreamDate(item.liveStreamAt)}`}
                   </p>
                 </div>
                 {item.liveStreamUrl && (
                   <a href={item.liveStreamUrl} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1.5 bg-white text-red-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                    onClick={() => viewMut.mutate({ id: item.id, progress: 0 })}>
+                    onClick={() => {
+                      if (!item.isSample) {
+                        viewMut.mutate({ id: item.id, progress: 0 });
+                      }
+                    }}>
                     <ExternalLink size={12} /> Join
                   </a>
                 )}

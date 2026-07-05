@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { DollarSign, Search, CreditCard, Banknote, CheckCircle, X, Receipt } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,12 +10,16 @@ import { cn } from '@/lib/utils';
 
 const METHODS = [
   { value: 'CASH',          label: 'Cash',          icon: Banknote },
-  { value: 'STRIPE',        label: 'Card',          icon: CreditCard },
+  { value: 'STRIPE',        label: 'Stripe Card',   icon: CreditCard },
+  { value: 'PAYPAL',        label: 'PayPal',        icon: CreditCard },
   { value: 'BANK_TRANSFER', label: 'Bank Transfer', icon: DollarSign },
 ];
 
 export default function CollectPaymentPage() {
   const qc = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackHandledRef = useRef(false);
   const [memberSearch, setMemberSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [selectedMembership, setSelectedMembership] = useState<any>(null);
@@ -49,14 +54,124 @@ export default function CollectPaymentPage() {
     onError: (e: any) => toast.error(e.response?.data?.message || 'Payment failed'),
   });
 
+  const stripeCheckoutMut = useMutation({
+    mutationFn: (dto: any) => api.post('/payments/stripe/checkout', dto).then((r) => r.data),
+    onSuccess: (data) => {
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      toast.error('Stripe checkout URL missing');
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Unable to start Stripe checkout'),
+  });
+
+  const stripeCompleteMut = useMutation({
+    mutationFn: (dto: { sessionId: string; paymentId: string }) => api.post('/payments/stripe/complete', dto).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Stripe payment completed');
+      router.replace('/dashboard/collect-payment');
+    },
+    onError: (e: any) => {
+      toast.error(e.response?.data?.message || 'Failed to finalize Stripe payment');
+      router.replace('/dashboard/collect-payment');
+    },
+  });
+
+  const paypalOrderMut = useMutation({
+    mutationFn: (dto: any) => api.post('/payments/paypal/create-order', dto).then((r) => r.data),
+    onSuccess: (data) => {
+      if (data?.approveUrl) {
+        window.location.href = data.approveUrl;
+        return;
+      }
+      toast.error('PayPal approval URL missing');
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Unable to start PayPal checkout'),
+  });
+
+  const paypalCaptureMut = useMutation({
+    mutationFn: (dto: { paymentId: string; orderId: string }) => api.post('/payments/paypal/capture-order', dto).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('PayPal payment captured');
+      router.replace('/dashboard/collect-payment');
+    },
+    onError: (e: any) => {
+      toast.error(e.response?.data?.message || 'Failed to capture PayPal payment');
+      router.replace('/dashboard/collect-payment');
+    },
+  });
+
+  useEffect(() => {
+    if (callbackHandledRef.current) return;
+
+    const gateway = searchParams.get('gateway');
+    const canceled = searchParams.get('canceled');
+    const paymentId = searchParams.get('paymentId');
+
+    if (!gateway) return;
+
+    callbackHandledRef.current = true;
+
+    if (canceled === '1') {
+      toast.error(`${gateway.toUpperCase()} payment was cancelled`);
+      router.replace('/dashboard/collect-payment');
+      return;
+    }
+
+    if (gateway === 'stripe') {
+      const sessionId = searchParams.get('session_id');
+      if (sessionId && paymentId) {
+        stripeCompleteMut.mutate({ sessionId, paymentId });
+      } else {
+        toast.error('Missing Stripe callback data');
+        router.replace('/dashboard/collect-payment');
+      }
+      return;
+    }
+
+    if (gateway === 'paypal') {
+      const orderId = searchParams.get('token');
+      if (orderId && paymentId) {
+        paypalCaptureMut.mutate({ orderId, paymentId });
+      } else {
+        toast.error('Missing PayPal callback data');
+        router.replace('/dashboard/collect-payment');
+      }
+    }
+  }, [router, searchParams, stripeCompleteMut, paypalCaptureMut]);
+
   const handleCollect = () => {
     if (!selectedMember || !amount) return;
-    collectMut.mutate({
+
+    const basePayload = {
       memberId: selectedMember.id,
       amount: parseFloat(amount),
-      method,
       description: description || `${method} payment collected by receptionist`,
       membershipId: selectedMembership?.id ?? undefined,
+    };
+
+    if (method === 'STRIPE') {
+      stripeCheckoutMut.mutate({
+        ...basePayload,
+        currency: 'USD',
+      });
+      return;
+    }
+
+    if (method === 'PAYPAL') {
+      paypalOrderMut.mutate({
+        ...basePayload,
+        currency: 'USD',
+      });
+      return;
+    }
+
+    collectMut.mutate({
+      ...basePayload,
+      method,
     });
   };
 
@@ -212,11 +327,13 @@ export default function CollectPaymentPage() {
 
               <button
                 onClick={handleCollect}
-                disabled={!amount || collectMut.isPending}
+                disabled={!amount || collectMut.isPending || stripeCheckoutMut.isPending || paypalOrderMut.isPending}
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
                 <DollarSign size={18} />
-                {collectMut.isPending ? 'Processing…' : `Collect $${amount || '0.00'} via ${METHODS.find(m => m.value === method)?.label}`}
+                {(collectMut.isPending || stripeCheckoutMut.isPending || paypalOrderMut.isPending)
+                  ? 'Processing…'
+                  : `Collect $${amount || '0.00'} via ${METHODS.find(m => m.value === method)?.label}`}
               </button>
             </>
           )}

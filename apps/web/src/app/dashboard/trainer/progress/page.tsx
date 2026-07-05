@@ -43,8 +43,7 @@ export default function TrainerProgressPage() {
     onError: (e: any) => toast.error(e.response?.data?.message || 'Failed'),
   });
 
-  const selectedClient = clients.find(c => c.id === selectedMember);
-  const memberLogs = assessments.filter((a: any) => a.member?.user?.email === selectedClient?.email || selectedMember === '');
+  const memberLogs = assessments.filter((a: any) => selectedMember === '' || a.member?.user?.id === selectedMember);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -92,9 +91,9 @@ export default function TrainerProgressPage() {
                 <tr key={log.id} className="border-t border-slate-100 hover:bg-slate-50/50">
                   <td className="px-4 py-3 text-slate-600">{log.date ? new Date(log.date).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-3 font-medium text-slate-800">{log.member?.user?.firstName} {log.member?.user?.lastName}</td>
-                  <td className="px-4 py-3 text-slate-600">{log.weight ? `${log.weight} kg` : '—'}</td>
-                  <td className="px-4 py-3 text-slate-600">{log.bodyFat ? `${log.bodyFat}%` : '—'}</td>
-                  <td className="px-4 py-3 text-slate-600">{log.waist ? `${log.waist} cm` : '—'}</td>
+                  <td className="px-4 py-3 text-slate-600">{log.weightKg ? `${log.weightKg} kg` : '—'}</td>
+                  <td className="px-4 py-3 text-slate-600">{log.bodyFatPct ? `${log.bodyFatPct}%` : '—'}</td>
+                  <td className="px-4 py-3 text-slate-600">{log.waistCm ? `${log.waistCm} cm` : '—'}</td>
                   <td className="px-4 py-3 text-slate-400 text-xs max-w-[200px] truncate">{log.notes ?? '—'}</td>
                 </tr>
               ))}

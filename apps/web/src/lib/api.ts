@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const apiBaseRaw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE = apiBaseRaw.endsWith('/api/v1')
+  ? apiBaseRaw
+  : `${apiBaseRaw.replace(/\/$/, '')}/api/v1`;
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1',
+  baseURL: API_BASE,
   withCredentials: true,
 });
 
@@ -25,7 +30,7 @@ api.interceptors.response.use(
         const refresh = localStorage.getItem('refreshToken');
         if (!refresh) throw new Error('No refresh token');
         const { data } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`,
+          `${API_BASE}/auth/refresh`,
           { refreshToken: refresh },
         );
         localStorage.setItem('accessToken', data.accessToken);
